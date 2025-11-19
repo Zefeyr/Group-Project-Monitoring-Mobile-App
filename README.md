@@ -21,7 +21,7 @@ An app that helps with organizing your group project and connect with other memb
 
 ## iii. Task Distribution
 
-| Group Member | Assigned Tasks | Reference
+| Group Member | Assigned Tasks | 
 |--------------|----------------|
 | **[Name 1]** | - Task 1<br>- Task 2 |
 | **[Name 2]** | - Task 1<br>- Task 2 |
