@@ -33,58 +33,135 @@ An app that helps with organizing your group project and connect with other memb
 
 # 📁 Project Documentation
 
-## **1. Project Initiation**
-Write the details here, for example:
-- Problem statement  
-- Project objectives  
-- Scope  
-- Constraints  
-- Initial assumptions  
+# 🚀 1. Project Ideation & Initiation
 
-*Placeholder:*  
-> Describe the background and initial motivation for this project…
+## **1.1 Mobile App Details**
 
----
+### **a. Title**
+*Insert app title here*
 
-## **2. Analysis**
-Write your analysis details, such as:
-- Requirements gathering  
-- Functional requirements  
-- Non-functional requirements  
-- User analysis  
-- System analysis  
+### **b. Background of the Problem**
+Explain:
+- What problem exists?
+- Why is it important?
+- How does it affect users?
 
-*Placeholder:*  
-> Provide detailed analysis of the system and user needs…
+### **c. Purpose / Objective**
+Explain:
+- What the app aims to achieve  
+- The goals of the system  
+- Expected outcomes  
 
----
+### **d. Target Users**
+Describe your primary audience:
+- Age group  
+- Field / profession  
+- User needs  
+- Usage environment  
 
-## **3. Planning & Design**
-Add all design-related content:
-- System architecture  
-- ERD / DFD / Use Case Diagrams  
-- UI/UX wireframes  
-- Workflow charts  
-- Project timeline / Gantt chart  
+### **e. Preferred Platform**
+Specify:
+- Android / iOS / Wearables  
+- Why this platform?  
+- Why Flutter is chosen (if applicable)  
 
-*Placeholder:*  
-> Describe system design, diagrams, and planning steps…
+### **f. Features & Functionalities**
+List and explain the main features:
+- Feature 1 — what & why  
+- Feature 2 — what & why  
+- Feature 3 — what & why  
 
----
-
-## **4. Write-Up / Additional Details**
-Add:
-- Explanations  
-- Justifications  
-- Screenshots  
-- Diagrams  
-- Notes  
-
-*Placeholder:*  
-> Final detailed write-up…  
+## **1.2 Justification of the Proposed App**
+Describe clearly:
+- **Why** the app idea was selected  
+- **How** the idea came up  
+- Existing solutions and gaps  
+- What makes your idea needed / unique  
 
 ---
 
+# 📊 2. Requirement Analysis & Planning
+
+## **2.1 Technical Feasibility**
+Explain:
+- Backend structure  
+- Database design (CRUD operations)  
+- Data storage selection  
+- Security considerations  
+
+### **a. Platform Compatibility**
+Describe:
+- Compatibility with smartphones  
+- Compatibility with wearables (if any)  
+- OS-level constraints  
+
+### **b. Logical Design**
+Provide:
+- **Sequence Diagram**
+- **Screen Navigation Flow Diagram**
+
+*(Insert images using Markdown:)*  
+
+
+markdown
+Copy code
+
+## **2.2 Project Planning**
+
+### **a. Gantt Chart & Timeline**
+Stages that must be included:
+- Project Initiation  
+- Requirement Analysis  
+- Design  
+- Development  
+
+Include a Gantt chart (image or table).
+
+*(Example placeholder)*  
+
+yaml
+Copy code
+
+Specify:
+- Start date (Today)  
+- End date (Group project presentation date)
+
+---
+
+# 🎨 3. Project Design
+
+## **3.1 User Interface (UI)**
+Explain how the UI follows mobile app design principles:
+- Small screen optimization  
+- Flutter widgets  
+- Gesture support (swipe, tap, long press)
+
+Include screenshots or mockups:
+
+markdown
+Copy code
+
+## **3.2 User Experience (UX)**
+Explain:
+- Navigation flow  
+- Ease of use  
+- Avoiding confusion  
+- Consistency in design  
+
+## **3.3 Consistency**
+Describe consistency in:
+- Color scheme  
+- Logo usage  
+- Design patterns  
+- Forms  
+- Layout styles  
+
+Include:
+
+yaml
+Copy code
+
+---
 # 📚 References
 List your references here in any format (APA, IEEE, MLA, etc.).  
 Example:
