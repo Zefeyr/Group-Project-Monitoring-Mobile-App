@@ -31,3 +31,67 @@ An app that helps with organizing your group project and connect with other memb
 
 > Replace tasks with detailed responsibilities.
 
+# 📁 Project Documentation
+
+## **1. Project Initiation**
+Write the details here, for example:
+- Problem statement  
+- Project objectives  
+- Scope  
+- Constraints  
+- Initial assumptions  
+
+*Placeholder:*  
+> Describe the background and initial motivation for this project…
+
+---
+
+## **2. Analysis**
+Write your analysis details, such as:
+- Requirements gathering  
+- Functional requirements  
+- Non-functional requirements  
+- User analysis  
+- System analysis  
+
+*Placeholder:*  
+> Provide detailed analysis of the system and user needs…
+
+---
+
+## **3. Planning & Design**
+Add all design-related content:
+- System architecture  
+- ERD / DFD / Use Case Diagrams  
+- UI/UX wireframes  
+- Workflow charts  
+- Project timeline / Gantt chart  
+
+*Placeholder:*  
+> Describe system design, diagrams, and planning steps…
+
+---
+
+## **4. Write-Up / Additional Details**
+Add:
+- Explanations  
+- Justifications  
+- Screenshots  
+- Diagrams  
+- Notes  
+
+*Placeholder:*  
+> Final detailed write-up…  
+
+---
+
+# 📚 References
+List your references here in any format (APA, IEEE, MLA, etc.).  
+Example:
+
+1. [Author], *Title*, Year.  
+2. [Website name], Available at: [URL].  
+3. [Research paper or article citation].
+
+*Placeholder:*  
+> Add references used in the project here…
