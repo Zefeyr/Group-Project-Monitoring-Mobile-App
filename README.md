@@ -28,6 +28,16 @@ An app that helps with organizing your group project and connect with other memb
 | **Zul** | **System Design & Diagram Lead**<br>- Create sequence diagram<br>- Create screen navigation flow diagram<br>- Assist in ERD/database design documentation<br>- Provide design justification for workflow and architecture<br>**Extra Function:** Produce system architecture diagram (App → Backend → Database) |
 | **Danish** | **Project Planning & Documentation Lead**<br>- Create detailed Gantt chart (Initiation → Analysis → Design → Development → Presentation)<br>- Set project timeline and milestones<br>- Document planning stages and processes<br>- Consolidate and organize all project documents<br>**Extra Function:** Prepare final README.md formatting and folder structure |
 
+| Stage | Zafran | Hakimi | Zul | Danish |
+|-------|--------|--------|-----|--------|
+| **Project Ideation & Initiation** | Draft app title & background of the problem | Write purpose/objectives & target user | Define preferred platform & features/functionalities | Justification: why & how the app idea was selected |
+| **Requirement Analysis & Planning** | Evaluate technical feasibility & CRUD operations | Plan backend structure & select packages/plugins | Ensure platform compatibility & database structure | Create sequence diagram & screen navigation flow |
+| **Planning (Gantt Chart & Timeline)** | Gantt chart: Project Initiation stage | Gantt chart: Requirement Analysis stage | Gantt chart: Design stage | Gantt chart: Development & Presentation stage |
+| **Project Design (UI/UX & Consistency)** | Design Home screen & Login screen UI | Design Main Feature screens UI | Apply UX principles: navigation flow & intuitiveness | Ensure consistency: color scheme, logo, forms, design patterns |
+
+> **Note:** Everyone is responsible for reviewing and refining each other's work to maintain quality and balance.
+
+
 # 📁 Project Documentation
 
 # 🚀 1. Project Ideation & Initiation
