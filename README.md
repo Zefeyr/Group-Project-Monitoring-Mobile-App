@@ -21,13 +21,6 @@ An app that helps with organizing your group project and connect with other memb
 
 ## iii. Task Distribution
 
-| Group Member | Assigned Tasks |
-|--------------|----------------|
-| **Zafran** | **Project Ideation & Initiation Lead**<br>- Write project background, problem statement, purpose & objectives<br>- Identify target users and preferred platform<br>- Draft core features & functionalities<br>- Lead UI/UX design principles (navigation flow, colors, layout)<br>- Design 3–4 UI mockups (Home, Login, Main Feature screens)<br>**Extra Function:** Create app logo and finalize color palette |
-| **Hakimi** | **Requirement Analysis & Backend Feasibility Lead**<br>- Perform technical feasibility evaluation<br>- Plan backend structure (CRUD, database, storage)<br>- Choose required packages and plugins<br>- Ensure platform compatibility (Android, iOS, wearables)<br>- Document functional & non-functional requirements<br>**Extra Function:** Document security considerations (authentication, data protection) |
-| **Zul** | **System Design & Diagram Lead**<br>- Create sequence diagram<br>- Create screen navigation flow diagram<br>- Assist in ERD/database design documentation<br>- Provide design justification for workflow and architecture<br>**Extra Function:** Produce system architecture diagram (App → Backend → Database) |
-| **Danish** | **Project Planning & Documentation Lead**<br>- Create detailed Gantt chart (Initiation → Analysis → Design → Development → Presentation)<br>- Set project timeline and milestones<br>- Document planning stages and processes<br>- Consolidate and organize all project documents<br>**Extra Function:** Prepare final README.md formatting and folder structure |
-
 | Stage | Zafran | Hakimi | Zul | Danish |
 |-------|--------|--------|-----|--------|
 | **Project Ideation & Initiation** | Draft app title & background of the problem | Write purpose/objectives & target user | Define preferred platform & features/functionalities | Justification: why & how the app idea was selected |
