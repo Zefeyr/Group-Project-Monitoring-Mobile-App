@@ -46,18 +46,14 @@ Explain:
 - Why is it important?
 - How does it affect users?
 
-### **c. Purpose / Objective**
-Explain:
-- What the app aims to achieve  
-- The goals of the system  
-- Expected outcomes  
+### **c. Objective**
+- To streamline group project management by improving communication and collaboration among team members through features like real time notifications, task tracking, peer reviews, and location based meeting assistance.  
+- To enhance the efficiency and effectiveness of group project collaboration by providing tools for real time communication, task management, reminders, peer feedback, and in person coordination through sensors and Bluetooth.  
 
 ### **d. Target Users**
-Describe your primary audience:
-- Age group  
-- Field / profession  
-- User needs  
-- Usage environment  
+- Students working on group projects in colleges or universities.
+- Remote and hybrid teams needing efficient collaboration tools.
+- Anyone involved in small project-based teams who require reminders, task tracking, and easy coordination.
 
 ### **e. Preferred Platform**
 Specify:
