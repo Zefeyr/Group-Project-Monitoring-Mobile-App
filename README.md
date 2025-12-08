@@ -60,16 +60,24 @@ Describe your primary audience:
 - Usage environment  
 
 ### **e. Preferred Platform**
-Specify:
-- Android / iOS / Wearables  
-- Why this platform?  
-- Why Flutter is chosen (if applicable)  
+Platform: Android and iOS
+
+Why: Targets the widest possible user base (students) who use smartphones for daily communication and quick task management.
+Why Flutter: Chosen for cross-platform development from a single codebase, which minimizes development time and costs while delivering native performance on both Android and iOS.  
 
 ### **f. Features & Functionalities**
 List and explain the main features:
-- Feature 1 — hme button  
-- Feature 2 — what & why  
-- Feature 3 — what & why  
+- Feature 1 — Task Tracking & Status Updates
+Displays tasks, deadlines, and current status (to do, in progress, etc.)
+
+- Feature 2 — Real-time Communication & "Beep"
+In-app chat with an urgent, high-priority "beep" via push notification.
+
+- Feature 3 — Collaborative Review System
+Allows members to upload work for others to provide structured ratings and feedback.
+
+- Feature 4 (Optional) - Location-Based Check-in
+Uses Bluetooth/GPS to automatically verify and log attendance at physical group meetings.
 
 ## **1.2 Justification of the Proposed App**
 Describe clearly:
