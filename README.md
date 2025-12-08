@@ -72,6 +72,7 @@ List and explain the main features:
 - Feature 3 — what & why  
 
 ## **1.2 Justification of the Proposed App**
+The proposed app which is Group Project Monitoring App is conceived to solved such problems in students and team collaboration which is focusing on simplicity and accountability.
 Describe clearly:
 - **Why** the app idea was selected  
 - **How** the idea came up  
