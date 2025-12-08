@@ -75,7 +75,7 @@ List and explain the main features:
 The proposed app which is Group Project Monitoring App is conceived to solved such problems in students and team collaboration which is focusing on simplicity and accountability.
 Describe clearly:
 - **Why** the app idea was selected
-    The app was selected to address a specific solution to uneven workload distribution and scattered communication in group project.  
+    -The app was selected to address a specific solution to uneven workload distribution and scattered communication in group project.  
 - **How** the idea came up
     The idea was first came up when the lecture came along with a great idea about group project monitoring application which is kind of interesting. Also, the concept arise from lot of students frustation which is lack of clear and real time visibility into who is doing what, leading to last minute group project.  
 - Existing solutions and gaps
