@@ -68,12 +68,18 @@ List and explain the main features:
 - Feature 3 — what & why  
 
 ## **1.2 Justification of the Proposed App**
+The proposed app which is Group Project Monitoring App is conceived to solved such problems in students and team collaboration which is focusing on simplicity and accountability.
 Describe clearly:
-- **Why** the app idea was selected  
-- **How** the idea came up  
-- Existing solutions and gaps  
+- **Why** the app idea was selected
+    -The app was selected to address a specific solution to uneven workload distribution and scattered communication in group project.  
+- **How** the idea came up
+    - The idea was first came up when the lecture came along with a great idea about group project monitoring application which is kind of interesting. Also, the concept arise from lot of students frustation which is lack of clear and real time visibility into who is doing what, leading to last minute group project.  
+- Existing solutions and gaps
+    - Some of applications and websites already exist to solve this problem such as Trello, Asana and Jira. These existing applications offer robust, enterprise-grade tracking, reporting and integrations. The existing solutions are powerful enough but also create some significant barriers for students. These applications are typically overprice and higly cost for students.  
 - What makes your idea needed / unique  
-
+    - Our app is a specialized solution that is genuinely needed because it focuses on a niche underserved by complex enterprise software. 
+    Core Unique Feature: Accountability Score/Visualization. This feature calculates and displays an individual's contribution based on timely task completion and peer feedback, providing instant, objective data for group members and instructors.
+    Needed Because: It is a mobile-first, low-friction tool designed specifically for short-term, academic collaboration, allowing groups to onboard and begin monitoring work in minutes, directly solving the problem of social loafing and administrative overhead.
 ---
 
 # 📊 2. Requirement Analysis & Planning
