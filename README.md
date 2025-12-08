@@ -67,7 +67,7 @@ Specify:
 
 ### **f. Features & Functionalities**
 List and explain the main features:
-- Feature 1 — what & why  
+- Feature 1 — hme button  
 - Feature 2 — what & why  
 - Feature 3 — what & why  
 
