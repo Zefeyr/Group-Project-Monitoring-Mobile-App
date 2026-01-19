@@ -38,7 +38,7 @@ An app that helps with organizing your group project and connect with other memb
 ## **1.1 Mobile App Details**
 
 ### **a. Title**
-*Insert app title here*
+**CollabQuest: The Project Hub**
 
 ### **b. Background of the Problem**
 Explain:
@@ -94,10 +94,10 @@ Describe clearly:
 
 ## **2.1 Technical Feasibility**
 Explain:
-- Backend structure  
-- Database design (CRUD operations)  
-- Data storage selection  
-- Security considerations  
+* **Backend Structure:** Firebase for real-time database and authentication.
+* **Database Design:** NoSQL structure supporting CRUD operations for Users, Projects, Tasks, and Reviews.
+* **Data Storage:** Cloud Firestore for text data and Firebase Storage for file uploads.
+* **Security:** End-to-end encryption for chat and secure authentication protocols. 
 
 ### **a. Platform Compatibility**
 Describe:
@@ -119,37 +119,27 @@ Copy code
 ## **2.2 Project Planning**
 
 ### **a. Gantt Chart & Timeline**
-Stages that must be included:
-- Project Initiation  
+| Task | Duration | Start Date | End Date |
+|-------|----------|------------|----------|
+| Project Initiation | 2 Weeks | Jan 20, 2026 | Feb 3, 2026 |
 - Requirement Analysis  
 - Design  
 - Development  
 
-Include a Gantt chart (image or table).
-
-*(Example placeholder)*  
-
-yaml
-Copy code
-
-Specify:
-- Start date (Today)  
-- End date (Group project presentation date)
+* **Start Date:** January 20, 2026
+* **End Date:** May 2026 (Presentation Date)
 
 ---
 
 # 🎨 3. Project Design
 
 ## **3.1 User Interface (UI)**
-Explain how the UI follows mobile app design principles:
-- Small screen optimization  
-- Flutter widgets  
-- Gesture support (swipe, tap, long press)
+* **Optimization:** Optimized for small screens using Flutter’s flexible layout widgets.
+* **Gestures:** Support for swipe-to-delete tasks and long-press to trigger "Beeps."
 
-Include screenshots or mockups:
+jangan lupa letak screenshots or mockups: -Design Home screen & Login screen UI(zap)
+                                          -Design Main Feature screens UI(kimi
 
-markdown
-Copy code
 
 ## **3.2 User Experience (UX)**
 Explain:
@@ -181,4 +171,5 @@ Example:
 3. [Research paper or article citation].
 
 *Placeholder:*  
-> Add references used in the project here…
+1. Google. (2026). *Flutter Documentation*. 
+2. Firebase. (2026). *Firestore Security Rules*.
