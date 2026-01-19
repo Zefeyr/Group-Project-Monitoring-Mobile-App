@@ -127,7 +127,7 @@ Copy code
 - Development  
 
 * **Start Date:** January 20, 2026
-* **End Date:** May 2026 (Presentation Date)
+* **End Date:** ##########JANGAN LUPA EJAS (Presentation Date)
 
 ---
 
