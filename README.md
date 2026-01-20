@@ -104,8 +104,12 @@ Describe:
 ### **b. Logical Design**
 - **Sequence Diagram**
 The system uses a reactive pattern where Firestore updates trigger Cloud Functions to update the Accountability Score and notify peers via Firebase Cloud Messaging (FCM).
+<img width="8192" height="3371" alt="sequencedigram" src="https://github.com/user-attachments/assets/28126500-66e2-46c2-ae49-2754b98bd85a" />
+
 - **Screen Navigation Flow Diagram**
 The app utilizes a Bottom Navigation Bar for its primary features (Tasks, Chat, Review, and Check-in). The Dashboard serves as the central entry point, providing a summary of project health and the "Beep" status of other members.
+<img width="7550" height="4082" alt="ScreenNavigationFlow" src="https://github.com/user-attachments/assets/280e345b-b4c4-4dd4-8867-8a55dfdd8532" />
+
 
 *(Insert images using Markdown:)*  
 
