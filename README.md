@@ -102,9 +102,10 @@ Describe:
 - OS-level constraints  
 
 ### **b. Logical Design**
-Provide:
 - **Sequence Diagram**
+The system uses a reactive pattern where Firestore updates trigger Cloud Functions to update the Accountability Score and notify peers via Firebase Cloud Messaging (FCM).
 - **Screen Navigation Flow Diagram**
+The app utilizes a Bottom Navigation Bar for its primary features (Tasks, Chat, Review, and Check-in). The Dashboard serves as the central entry point, providing a summary of project health and the "Beep" status of other members.
 
 *(Insert images using Markdown:)*  
 
