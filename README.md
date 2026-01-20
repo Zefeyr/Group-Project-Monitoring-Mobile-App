@@ -117,11 +117,6 @@ The app utilizes a Bottom Navigation Bar for its primary features (Tasks, Chat, 
 </p>
 
 
-*(Insert images using Markdown:)*  
-
-
-markdown
-Copy code
 
 ## **2.2 Project Planning**
 
@@ -166,12 +161,10 @@ Explain:
 - Consistency in design  
 
 ## **3.3 Consistency**
-Describe consistency in:
-- Color scheme  
-- Logo usage  
-- Design patterns  
-- Forms  
-- Layout styles  
+* **Color Scheme:** Primary Blue for trust, Red for urgent notifications.
+* **Design Patterns:** Standardized card views for tasks and uniform button styles throughout.
+* **Logo Usage:** The logo should consistently appear in the same location, typically the top-left corner of the navigation bar, to provide a "Home" link.
+* **Forms:** Consistency in forms prevents user errors and speeds up data entry for tasks like Work Submission or Login.
 
 Include:
 
