@@ -106,15 +106,21 @@ Describe:
 - OS-level constraints  
 
 ### **b. Logical Design**
-Provide:
 - **Sequence Diagram**
+The system uses a reactive pattern where Firestore updates trigger Cloud Functions to update the Accountability Score and notify peers via Firebase Cloud Messaging (FCM).
+<img width="8192" height="3371" alt="sequencedigram" src="https://github.com/user-attachments/assets/28126500-66e2-46c2-ae49-2754b98bd85a" />
+<p align="center">
+    Figure 2.1.1 Sequence Diagram
+</p>
+
 - **Screen Navigation Flow Diagram**
+The app utilizes a Bottom Navigation Bar for its primary features (Tasks, Chat, Review, and Check-in). The Dashboard serves as the central entry point, providing a summary of project health and the "Beep" status of other members.
+<img width="987" height="529" alt="navflow" src="https://github.com/user-attachments/assets/ab201f08-4382-4ef3-8e8a-89ce81cc0833" />
+<p align="center">
+    Figure 2.1.2 Screen Navigation Flow
+</p>
 
-*(Insert images using Markdown:)*  
 
-
-markdown
-Copy code
 
 ## **2.2 Project Planning**
 
@@ -149,12 +155,10 @@ Explain:
 - Consistency in design  
 
 ## **3.3 Consistency**
-Describe consistency in:
-- Color scheme  
-- Logo usage  
-- Design patterns  
-- Forms  
-- Layout styles  
+* **Color Scheme:** Primary Blue for trust, Red for urgent notifications.
+* **Design Patterns:** Standardized card views for tasks and uniform button styles throughout.
+* **Logo Usage:** The logo should consistently appear in the same location, typically the top-left corner of the navigation bar, to provide a "Home" link.
+* **Forms:** Consistency in forms prevents user errors and speeds up data entry for tasks like Work Submission or Login.
 
 Include:
 
