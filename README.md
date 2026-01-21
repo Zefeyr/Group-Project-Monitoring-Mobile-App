@@ -132,9 +132,19 @@ Describe:
   - **Android**: Requires Google Play Services for location-based features (if applicable).
   - **Permissions**: Requires Camera, Location, and Storage permissions for full functionality.
 
+### **b. Database Structure**
+The application uses **Cloud Firestore (NoSQL)** for real-time collaboration and data synchronization.
+
+**Collections & Schema:**
+- **Users** (`users/{userId}`): Stores user profiles (Student/Lecturer), email, and display name.
+- **Projects** (`projects/{projectId}`): Stores project metadata, members list, and overall progress.
+- **Tasks** (`projects/{projectId}/tasks/{taskId}`): Sub-collection within projects storing task details, assignee, status, and due date.
+- **Chat** (`projects/{projectId}/chat/{messageId}`): Sub-collection for group messages, timestamps, and sender IDs.
 
 
-### **b. Logical Design**
+
+
+### **c. Logical Design**
 - **Sequence Diagram**
 The system uses a reactive pattern where Firestore updates trigger Cloud Functions to update the Accountability Score and notify peers via Firebase Cloud Messaging (FCM).
 <img width="8192" height="3371" alt="sequencedigram" src="https://github.com/user-attachments/assets/28126500-66e2-46c2-ae49-2754b98bd85a" />
