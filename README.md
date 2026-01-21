@@ -93,11 +93,32 @@ Describe clearly:
 # 📊 2. Requirement Analysis & Planning
 
 ## **2.1 Technical Feasibility**
-Explain:
-* **Backend Structure:** Firebase for real-time database and authentication.
-* **Database Design:** NoSQL structure supporting CRUD operations for Users, Projects, Tasks, and Reviews.
-* **Data Storage:** Cloud Firestore for text data and Firebase Storage for file uploads.
-* **Security:** End-to-end encryption for chat and secure authentication protocols. 
+
+### **Backend Structure & Plugin Selection**
+#### **1. Backend Components**
+* **Database (Cloud Firestore):** A **NoSQL** database that stores data in flexible documents. This will handle the storage for `Users`, `Projects`, `Tasks`, and `Reviews` collections, allowing for real-time updates without manual refreshing.
+* **Authentication (Firebase Auth):** Provides secure identity management, supporting **Email/Password** and **Google Sign-In** protocols to ensure user data privacy.
+* **Cloud Logic (Firebase Cloud Functions):** A serverless framework that executes backend code in response to events (e.g., updating the **Accountability Score** automatically when a task is marked as "Complete").
+* **Push Notifications (FCM):** Utilizes **Firebase Cloud Messaging** to power the high-priority **"Beep"** feature, ensuring members are alerted of urgent requests even when the app is in the background.
+
+#### **2. Security & Encryption Implementation**
+To maintain intellectual honesty and data privacy, the following security protocols are implemented:
+* **End-to-End Encryption (E2EE):** Chat messages and peer review comments are encrypted locally using the **AES-256** algorithm before being sent to Firestore. Only authorized project members hold the decryption keys.
+* **Transport Security:** All data in transit is protected via **TLS (Transport Layer Security)**.
+* **Access Control:** **Firestore Security Rules** are configured to restrict data access, ensuring users can only view or edit documents within their assigned project groups.
+
+#### **3. Selected Packages & Plugins**
+The following **Flutter/Dart** packages have been selected to bridge the app's frontend with its backend infrastructure:
+
+| Category | Package Name | Purpose |
+| :--- | :--- | :--- |
+| **Core** | `firebase_core` | Mandatory for initializing all Firebase services. |
+| **Database** | `cloud_firestore` | Enables real-time data streaming and NoSQL operations. |
+| **Auth** | `firebase_auth` | Manages user registration, login, and session persistence. |
+| **Messaging** | `firebase_messaging` | Handles incoming and outgoing push notifications for "Beeps." |
+| **Logic** | `cloud_functions` | Allows the app to trigger server-side scripts for scoring logic. |
+| **State Management** | `provider` | Ensures a reactive UI that updates instantly when backend data changes. |
+| **Security** | `encrypt` | Implements **AES-256 encryption** for the Peer Review and Chat content. |
 
 ### **a. Platform Compatibility**
 Describe:
