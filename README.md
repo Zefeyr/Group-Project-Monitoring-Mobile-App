@@ -122,9 +122,17 @@ The following **Flutter/Dart** packages have been selected to bridge the app's f
 
 ### **a. Platform Compatibility**
 Describe:
-- Compatibility with smartphones  
-- Compatibility with wearables (if any)  
-- OS-level constraints  
+- **Compatibility with smartphones**: 
+  - **Android**: Fully compatible with Android devices running Android 5.0 (Lollipop) or higher.
+  - **iOS**: Fully compatible with iPhone devices running iOS 13.0 or higher.
+- **Compatibility with wearables**: 
+  - Not currently compatible with Wear OS or Apple Watch.
+- **OS-level constraints**: 
+  - **iOS**: Requires iOS 13.0+ due to deployment target settings.
+  - **Android**: Requires Google Play Services for location-based features (if applicable).
+  - **Permissions**: Requires Camera, Location, and Storage permissions for full functionality.
+
+
 
 ### **b. Logical Design**
 - **Sequence Diagram**
