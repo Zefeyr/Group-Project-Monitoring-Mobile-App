@@ -154,7 +154,7 @@ The system uses a reactive pattern where Firestore updates trigger Cloud Functio
 
 - **Screen Navigation Flow Diagram**
 The app utilizes a Bottom Navigation Bar for its primary features (Tasks, Chat, Review, and Check-in). The Dashboard serves as the central entry point, providing a summary of project health and the "Beep" status of other members.
-<img width="987" height="529" alt="navflow" src="https://github.com/user-attachments/assets/ab201f08-4382-4ef3-8e8a-89ce81cc0833" />
+<img width="987" height="493" alt="navflow" src="https://github.com/user-attachments/assets/56f47c43-f959-4575-b376-912b6363d39a" />
 <p align="center">
     Figure 2.1.2 Screen Navigation Flow
 </p>
