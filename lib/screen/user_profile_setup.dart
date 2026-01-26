@@ -256,10 +256,10 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
 
                       if (!mounted) return;
 
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
-                      );
+                      if (!mounted) return;
+
+                      // Clear the stack and return to the root (which is now HomeScreen via StreamBuilder)
+                      Navigator.of(context).popUntil((route) => route.isFirst);
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Error saving profile: $e')),

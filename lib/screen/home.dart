@@ -55,11 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              if (context.mounted) {
-                Navigator.of(
-                  context,
-                ).pushNamedAndRemoveUntil('/login', (route) => false);
-              }
+              // No navigation needed - main.dart StreamBuilder handles this
             },
           ),
         ],
@@ -106,6 +102,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 .limit(1)
                 .snapshots(),
             builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                // Silently handle errors on logout
+                return _buildFinalReminder("No upcoming deadlines", "All caught up!");
+              }
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return _buildFinalReminder(
                   "No upcoming deadlines",
@@ -160,6 +160,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
+                  // Suppress permission denied error during logout
+                  if (snapshot.error.toString().contains("permission-denied")) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
                   return Center(child: Text("Error: ${snapshot.error}"));
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
