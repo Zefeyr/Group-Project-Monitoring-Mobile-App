@@ -78,10 +78,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-          child: Stack(
+          child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, right: 8),
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              EditProfileScreen(userData: userData),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    color: primaryBlue,
+                    tooltip: "Edit Profile",
+                  ),
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(
+                  0,
+                  -20,
+                ), // Slight nudge up to overlap the empty space left by the button row
                 child: Column(
                   children: [
                     Stack(
@@ -210,24 +233,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                   ],
-                ),
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            EditProfileScreen(userData: userData),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_outlined),
-                  color: primaryBlue,
-                  tooltip: "Edit Profile",
                 ),
               ),
             ],
