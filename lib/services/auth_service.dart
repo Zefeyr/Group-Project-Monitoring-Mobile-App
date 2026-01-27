@@ -14,7 +14,7 @@ class AuthService {
   AuthService._internal();
 
   /// Sign in with Google
-  Future<UserCredential?> signInWithGoogle() async {
+  Future<Map<String, dynamic>?> signInWithGoogle() async {
     try {
       // 1. Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -37,12 +37,14 @@ class AuthService {
         credential,
       );
 
+      bool isNewUser = false;
+
       // 5. Ensure user document exists in Firestore
       if (userCredential.user != null) {
-        await _ensureUserDocument(userCredential.user!);
+        isNewUser = await _ensureUserDocument(userCredential.user!);
       }
 
-      return userCredential;
+      return {'credential': userCredential, 'isNewUser': isNewUser};
     } catch (e) {
       debugPrint("Error signing in with Google: $e");
       rethrow;
@@ -50,7 +52,8 @@ class AuthService {
   }
 
   /// Ensure user exists in Firestore
-  Future<void> _ensureUserDocument(User user) async {
+  /// Returns true if a new document was created, false otherwise.
+  Future<bool> _ensureUserDocument(User user) async {
     final userRef = _firestore.collection('users').doc(user.uid);
     final doc = await userRef.get();
 
@@ -63,7 +66,9 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
         'role': 'Student', // Default role
       });
+      return true;
     }
+    return false;
   }
 
   /// Sign Out

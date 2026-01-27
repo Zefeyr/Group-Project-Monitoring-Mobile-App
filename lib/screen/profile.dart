@@ -727,8 +727,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(
                         "Verified Teammate",
                         style: GoogleFonts.inter(
-                          color: Colors.white54,
-                          fontSize: 11,
+                          color: const Color(0xFF69F0AE), // Light Green accent
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],

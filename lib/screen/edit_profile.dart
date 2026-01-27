@@ -214,6 +214,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               controller: _matricController,
               label: 'Matric Number',
               icon: Icons.badge_outlined,
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
 
@@ -309,24 +310,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => _isLoading = true);
 
+    if (!RegExp(r'^\d{7}$').hasMatch(_matricController.text.trim())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Matric number must be exactly 7 digits')),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
     try {
       String? photoUrl = await _uploadImage(user.uid);
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({
-            'name': _nameController.text.trim(),
-            'matric_no': _matricController.text.trim(),
-            'kulliyyah': _selectedKulliyyah,
-            'major': _majorController.text.trim(),
-            'semester': _selectedSemester,
-            'skills': _skillsController.text.trim(),
-            'bio': _bioController.text.trim(),
-            'email': user.email, // Ensure email is saved/updated
-            if (photoUrl != null) 'photo_url': photoUrl,
-            'updated_at': FieldValue.serverTimestamp(),
-          });
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {
+          'name': _nameController.text.trim(),
+          'matric_no': _matricController.text.trim(),
+          'kulliyyah': _selectedKulliyyah,
+          'major': _majorController.text.trim(),
+          'semester': _selectedSemester,
+          'skills': _skillsController.text.trim(),
+          'bio': _bioController.text.trim(),
+          'email': user.email, // Ensure email is saved/updated
+          if (photoUrl != null) 'photo_url': photoUrl,
+          'updated_at': FieldValue.serverTimestamp(),
+        },
+      );
 
       // Update display name in Auth as well if possible
       if (_nameController.text.isNotEmpty &&
@@ -356,6 +364,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String label,
     required IconData icon,
     int maxLines = 1,
+    TextInputType? keyboardType,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -366,6 +375,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        keyboardType: keyboardType,
         style: GoogleFonts.inter(),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: Colors.grey),
