@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -214,6 +215,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               controller: _matricController,
               label: 'Matric Number',
               icon: Icons.badge_outlined,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(7),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -307,6 +313,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    // Validation
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Full Name is required')));
+      return;
+    }
+
+    if (_matricController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Matric Number is required')),
+      );
+      return;
+    }
+
+    if (_matricController.text.trim().length != 7) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Matric Number must be exactly 7 digits')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -323,7 +351,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'semester': _selectedSemester,
             'skills': _skillsController.text.trim(),
             'bio': _bioController.text.trim(),
-            'email': user.email, // Ensure email is saved/updated
             if (photoUrl != null) 'photo_url': photoUrl,
             'updated_at': FieldValue.serverTimestamp(),
           });
@@ -356,6 +383,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String label,
     required IconData icon,
     int maxLines = 1,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -366,6 +395,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         style: GoogleFonts.inter(),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: Colors.grey),
