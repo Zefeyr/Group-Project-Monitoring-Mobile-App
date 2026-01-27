@@ -5,8 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
 import 'home.dart';
-
 
 class UserProfileSetup extends StatefulWidget {
   final String name;
@@ -17,9 +17,7 @@ class UserProfileSetup extends StatefulWidget {
 }
 
 class _UserProfileSetupState extends State<UserProfileSetup> {
-// ... (existing code)
-
-
+  // ... (existing code)
 
   final _matricController = TextEditingController();
   final _majorController = TextEditingController();
@@ -49,7 +47,15 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
   ];
 
   final List<String> _semesters = [
-    '1', '2', '3', '4', '5', '6', '7', '8', '9+',
+    '1',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9+',
   ];
 
   @override
@@ -62,7 +68,9 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
@@ -73,13 +81,16 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
   Future<String?> _uploadImage(String uid) async {
     if (_imageFile == null) return null;
     try {
-      final ref = FirebaseStorage.instance.ref().child('profile_images').child('$uid.jpg');
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child('$uid.jpg');
       await ref.putFile(_imageFile!);
       return await ref.getDownloadURL();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error uploading image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
       return null;
     }
   }
@@ -107,11 +118,7 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE0F7FA),
-              Color(0xFF88D3CE),
-              Color(0xFF3F6D9F),
-            ],
+            colors: [Color(0xFFE0F7FA), Color(0xFF88D3CE), Color(0xFF3F6D9F)],
           ),
         ),
         child: SafeArea(
@@ -132,7 +139,10 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.9),
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFF1A3B5D).withOpacity(0.5), width: 3),
+                            border: Border.all(
+                              color: const Color(0xFF1A3B5D).withOpacity(0.5),
+                              width: 3,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.1),
@@ -148,7 +158,11 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
                                 : null,
                           ),
                           child: _imageFile == null
-                              ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Colors.grey,
+                                )
                               : null,
                         ),
                         Positioned(
@@ -160,7 +174,11 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
                               color: Color(0xFF1A3B5D),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ],
@@ -168,12 +186,17 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                
+
                 // Matric Number
                 _buildGlassTextField(
                   controller: _matricController,
                   label: 'Matric Number',
                   icon: Icons.numbers,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(7),
+                  ],
                 ),
                 const SizedBox(height: 16),
 
@@ -202,7 +225,7 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
                   icon: Icons.calendar_today,
                   items: _semesters,
                   onChanged: (v) => setState(() => _selectedSemester = v),
-                ), 
+                ),
                 const SizedBox(height: 16),
 
                 // Skills
@@ -224,57 +247,83 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
 
                 // Save Button
                 ElevatedButton(
-                  onPressed: _isLoading ? null : () async {
-                    final user = FirebaseAuth.instance.currentUser;
-                    if (user == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('No user logged in!')),
-                      );
-                      return;
-                    }
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('No user logged in!'),
+                              ),
+                            );
+                            return;
+                          }
 
-                    // Basic validation
-                    if (_matricController.text.isEmpty || 
-                        _selectedKulliyyah == null || 
-                        _majorController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please fill required fields (Matric, Kulliyyah, Major)')),
-                      );
-                      return;
-                    }
+                          // Basic validation
+                          if (_matricController.text.isEmpty ||
+                              _selectedKulliyyah == null ||
+                              _majorController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Please fill required fields (Matric, Kulliyyah, Major)',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
 
-                    setState(() => _isLoading = true);
+                          if (_matricController.text.trim().length != 7) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Matric Number must be exactly 7 digits',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
 
-                    try {
-                      String? photoUrl = await _uploadImage(user.uid);
+                          setState(() => _isLoading = true);
 
-                      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-                        'name': widget.name,
-                        'matric_no': _matricController.text.trim(),
-                        'kulliyyah': _selectedKulliyyah,
-                        'major': _majorController.text.trim(),
-                        'semester': _selectedSemester,
-                        'skills': _skillsController.text.trim(),
-                        'bio': _bioController.text.trim(),
-                        'email': user.email,
-                        'photo_url': photoUrl,
-                        'created_at': FieldValue.serverTimestamp(),
-                      });
+                          try {
+                            String? photoUrl = await _uploadImage(user.uid);
 
-                      if (!mounted) return;
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid)
+                                .set({
+                                  'name': widget.name,
+                                  'matric_no': _matricController.text.trim(),
+                                  'kulliyyah': _selectedKulliyyah,
+                                  'major': _majorController.text.trim(),
+                                  'semester': _selectedSemester,
+                                  'skills': _skillsController.text.trim(),
+                                  'bio': _bioController.text.trim(),
+                                  'email': user.email,
+                                  'photo_url': photoUrl,
+                                  'created_at': FieldValue.serverTimestamp(),
+                                });
 
-                      if (!mounted) return;
+                            if (!mounted) return;
 
-                      // Clear the stack and return to the root (which is now HomeScreen via StreamBuilder)
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error saving profile: $e')),
-                      );
-                    } finally {
-                      if (mounted) setState(() => _isLoading = false);
-                    }
-                  },
+                            if (!mounted) return;
+
+                            // Clear the stack and return to the root (which is now HomeScreen via StreamBuilder)
+                            Navigator.of(
+                              context,
+                            ).popUntil((route) => route.isFirst);
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error saving profile: $e'),
+                              ),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _isLoading = false);
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A3B5D),
                     foregroundColor: Colors.white,
@@ -285,19 +334,22 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: _isLoading 
-                    ? const SizedBox(
-                        width: 24, 
-                        height: 24, 
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : Text(
-                      'Save & Continue',
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'Save & Continue',
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ],
             ),
@@ -313,6 +365,8 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
     required IconData icon,
     bool obscureText = false,
     int maxLines = 1,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -330,13 +384,18 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
         controller: controller,
         obscureText: obscureText,
         maxLines: maxLines,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         style: GoogleFonts.inter(color: Colors.black87),
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: const Color(0xFF1A3B5D)),
           labelText: label,
           labelStyle: GoogleFonts.inter(color: Colors.grey[600]),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 16,
+            horizontal: 20,
+          ),
         ),
       ),
     );
@@ -368,12 +427,18 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
           labelText: label,
           labelStyle: GoogleFonts.inter(color: Colors.grey[600]),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 16,
+            horizontal: 20,
+          ),
         ),
         icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF1A3B5D)),
         dropdownColor: Colors.white,
         items: items.map((item) {
-            return DropdownMenuItem(value: item, child: Text(item, style: GoogleFonts.inter()));
+          return DropdownMenuItem(
+            value: item,
+            child: Text(item, style: GoogleFonts.inter()),
+          );
         }).toList(),
         onChanged: onChanged,
       ),

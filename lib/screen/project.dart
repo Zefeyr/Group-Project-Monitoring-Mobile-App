@@ -8,6 +8,7 @@ import 'package:flutter/services.dart'; // Required for Clipboard.setData
 import 'createtask.dart';
 import 'createmeeting.dart';
 import 'verifymeeting.dart';
+import 'submit_review.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final String projectId;
@@ -457,58 +458,90 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   width: isMe ? 2 : 1,
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
-                  if (isMe)
-                    Text(
-                      "You",
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : primaryBlue,
-                      ),
-                    )
-                  else
-                    FutureBuilder<QuerySnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('users')
-                          .where('email', isEqualTo: email.trim())
-                          .limit(1)
-                          .get(),
-                      builder: (context, snapshot) {
-                        String name = "";
-                        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                          var data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-                          name = data['name'] ?? "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}".trim();
-                        }
-                        
-                        if (name.isEmpty) {
-                           name = email.split('@')[0];
-                        }
-                        
-                        return Text(
-                          name,
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isMe)
+                        Text(
+                          "You",
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: isSelected ? Colors.white : primaryBlue,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
-                    ),
-                  Text(
-                    isLead ? "Project Lead" : "Team Member",
-                    style: GoogleFonts.inter(
-                      fontSize: 9,
-                      color: isSelected ? Colors.white70 : Colors.grey,
-                    ),
+                        )
+                      else
+                        FutureBuilder<QuerySnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('users')
+                              .where('email', isEqualTo: email.trim())
+                              .limit(1)
+                              .get(),
+                          builder: (context, snapshot) {
+                            String name = "";
+                            if (snapshot.hasData &&
+                                snapshot.data!.docs.isNotEmpty) {
+                              var data =
+                                  snapshot.data!.docs.first.data()
+                                      as Map<String, dynamic>;
+                              name =
+                                  data['name'] ??
+                                  "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}"
+                                      .trim();
+                            }
+
+                            if (name.isEmpty) {
+                              name = email.split('@')[0];
+                            }
+
+                            return Text(
+                              name,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected ? Colors.white : primaryBlue,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
+                        ),
+                      Text(
+                        isLead ? "Project Lead" : "Team Member",
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          color: isSelected ? Colors.white70 : Colors.grey,
+                        ),
+                      ),
+                      const Spacer(),
+                      _buildMiniTaskBadge(email, isSelected),
+                    ],
                   ),
-                  const Spacer(),
-                  _buildMiniTaskBadge(email, isSelected),
+                  if (!isMe)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: InkWell(
+                        onTap: () => _handleReview(context, email),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white.withOpacity(0.2)
+                                : primaryBlue.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.rate_review_outlined,
+                            size: 14,
+                            color: isSelected ? Colors.white : primaryBlue,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -601,11 +634,15 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     ),
                   ),
                   if (isOwner && data['status'] != 'Completed')
-                     IconButton(
-                        icon: const Icon(Icons.check_circle_outline, color: Colors.green),
-                        tooltip: "Mark Project as Completed",
-                        onPressed: () => _showCompletionDialog(context, members, data['name']),
-                     ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.green,
+                      ),
+                      tooltip: "Mark Project as Completed",
+                      onPressed: () =>
+                          _showCompletionDialog(context, members, data['name']),
+                    ),
                   const Spacer(),
                   Icon(
                     _isSummaryExpanded ? Icons.expand_less : Icons.expand_more,
@@ -693,35 +730,42 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              ...members.map(
-                (rawEmail) {
-                  final email = rawEmail.trim();
-                  print("Fetching for email: '$email'"); // Debug print
-                  
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: FutureBuilder<QuerySnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('users')
-                          .where('email', isEqualTo: email)
-                          .limit(1)
-                          .get(),
+              ...members.map((rawEmail) {
+                final email = rawEmail.trim();
+                print("Fetching for email: '$email'"); // Debug print
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .where('email', isEqualTo: email)
+                        .limit(1)
+                        .get(),
                     builder: (context, snapshot) {
                       String displayName = "";
                       if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                        print("Found user for $email: ${snapshot.data!.docs.length}"); // Debug
-                        var userData = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-                        displayName = userData['name'] ?? 
-                            "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
+                        print(
+                          "Found user for $email: ${snapshot.data!.docs.length}",
+                        ); // Debug
+                        var userData =
+                            snapshot.data!.docs.first.data()
+                                as Map<String, dynamic>;
+                        displayName =
+                            userData['name'] ??
+                            "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}"
+                                .trim();
                       } else {
-                         print("No user found for $email (snapshot has data: ${snapshot.hasData})");
+                        print(
+                          "No user found for $email (snapshot has data: ${snapshot.hasData})",
+                        );
                       }
-                      
+
                       // Fallback for legacy users: Extract name from email
                       if (displayName.isEmpty) {
                         displayName = email.split('@')[0];
                       }
-                      
+
                       return Row(
                         children: [
                           const Icon(
@@ -745,8 +789,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     },
                   ),
                 );
-                },
-              ).toList(),
+              }).toList(),
             ],
           ],
         ),
@@ -754,26 +797,35 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
-  void _showCompletionDialog(BuildContext context, List<String> members, String? name) {
+  void _showCompletionDialog(
+    BuildContext context,
+    List<String> members,
+    String? name,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Complete Project?", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-         content: const Text("This will mark the project as finished and notify all team members. Iterate with caution!"),
-         actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              onPressed: () {
-                Navigator.pop(context);
-                _completeProject(members, name ?? "Project");
-              },
-              child: const Text("Confirm"),
-            )
-         ],
+        title: Text(
+          "Complete Project?",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "This will mark the project as finished and notify all team members. Iterate with caution!",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () {
+              Navigator.pop(context);
+              _completeProject(members, name ?? "Project");
+            },
+            child: const Text("Confirm"),
+          ),
+        ],
       ),
     );
   }
@@ -785,7 +837,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           .collection('projects')
           .doc(widget.projectId)
           .update({'status': 'Completed'});
-      
+
       // 2. Notify All Members
       for (String email in members) {
         final userQuery = await FirebaseFirestore.instance
@@ -795,8 +847,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             .get();
 
         if (userQuery.docs.isNotEmpty) {
-           final uid = userQuery.docs.first.id;
-           await FirebaseFirestore.instance
+          final uid = userQuery.docs.first.id;
+          await FirebaseFirestore.instance
               .collection('users')
               .doc(uid)
               .collection('notifications')
@@ -975,5 +1027,50 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleReview(BuildContext context, String email) async {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Fetching member details...")));
+
+    try {
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        final userDoc = userQuery.docs.first;
+        final uid = userDoc.id;
+        final name = userDoc.data()['name'] ?? email;
+
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SubmitReviewScreen(
+                targetUid: uid,
+                targetEmail: email,
+                targetName: name,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Member profile not found.")),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    }
   }
 }
