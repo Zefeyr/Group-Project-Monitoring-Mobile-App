@@ -44,7 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             _selectedTab == 0
                 ? _buildProjectHistoryList(currentUser!.email)
-                : _buildPeerReviewsList(currentUser!.uid),
+                : _buildPeerReviewsList(currentUser!.email),
             const SizedBox(height: 100), // Bottom padding for nav bar
           ],
         ),
@@ -92,13 +92,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           itemCount: snapshot.data!.docs.length,
           separatorBuilder: (c, i) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
-            var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            var data =
+                snapshot.data!.docs[index].data() as Map<String, dynamic>;
             String name = data['name'] ?? "Project";
             String subject = data['subject'] ?? "General";
             Timestamp? deadline = data['deadline'];
-            String dateStr = deadline != null 
-               ? DateFormat('MMM d, y').format(deadline.toDate()) 
-               : "";
+            String dateStr = deadline != null
+                ? DateFormat('MMM d, y').format(deadline.toDate())
+                : "";
 
             return Container(
               padding: const EdgeInsets.all(16),
@@ -116,7 +117,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: Colors.green.shade50,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+                    child: Icon(
+                      Icons.check_circle,
+                      color: Colors.green.shade700,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -131,7 +136,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         Text(
-                          dateStr.isNotEmpty ? "$subject • Due $dateStr" : subject,
+                          dateStr.isNotEmpty
+                              ? "$subject • Due $dateStr"
+                              : subject,
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: Colors.grey,
@@ -370,80 +377,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collectionGroup('tasks')
-          .where('assignedTo', isEqualTo: email)
+          .collection('projects')
+          .where('members', arrayContains: email)
           .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          debugPrint("ProfileStats Error: ${snapshot.error}");
-          return _statCard(
-            "Error",
-            "!",
-            Icons.error_outline,
-            color: Colors.red,
-          );
-        }
-
-        int totalTasks = 0;
+      builder: (context, projectSnapshot) {
+        int totalProjects = 0;
         int completed = 0;
 
-        if (snapshot.hasData) {
-          final docs = snapshot.data!.docs;
-          debugPrint("ProfileStats: Found ${docs.length} tasks for $email");
-          totalTasks = docs.length;
-          completed = docs.where((doc) {
-            final status = doc['status'] as String? ?? '';
-            return status.toLowerCase() == 'completed';
+        if (projectSnapshot.hasData) {
+          totalProjects = projectSnapshot.data!.docs.length;
+          // Count projects where this user has submitted a review (is in 'reviewedBy')
+          completed = projectSnapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final reviewedBy = List<String>.from(data['reviewedBy'] ?? []);
+            return reviewedBy.contains(email);
           }).length;
-        } else {
-          debugPrint("ProfileStats: No data yet/Loading...");
-          totalTasks = snapshot.data!.docs.length;
-          completed = snapshot.data!.docs
-              .where((doc) => (doc['status'] ?? '').toString().toLowerCase() == 'completed')
-              .length;
         }
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: [
-              Expanded(
-                child: _statCard(
-                  "Tasks",
-                  "$totalTasks",
-                  Icons.assignment_outlined,
-                ),
-              _statCard(
-                "Tasks",
-                "$totalTasks",
-                Icons.assignment_outlined,
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collectionGroup('reviews_data')
+              .where('targetUser', isEqualTo: email)
+              .snapshots(),
+          builder: (context, reviewSnapshot) {
+            String ratingStr = "N/A";
+
+            if (reviewSnapshot.hasData &&
+                reviewSnapshot.data!.docs.isNotEmpty) {
+              final docs = reviewSnapshot.data!.docs;
+              double totalRating = 0;
+              for (var doc in docs) {
+                totalRating += (doc['rating'] as num).toDouble();
+              }
+              double avg = totalRating / docs.length;
+              ratingStr = avg.toStringAsFixed(1);
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  _statCard(
+                    "Projects",
+                    "$totalProjects",
+                    Icons.folder_open_rounded,
+                  ),
+                  const SizedBox(width: 12),
+                  _statCard(
+                    "Completed",
+                    "$completed",
+                    Icons.check_circle_outline,
+                    color: Colors.green,
+                  ),
+                  const SizedBox(width: 12),
+                  _statCard(
+                    "Avg Rating",
+                    ratingStr,
+                    Icons.star_rounded,
+                    color: Colors.amber,
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _statCard(
-                  "Completed",
-                  "$completed",
-                  Icons.check_circle_outline,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Placeholder for future attendance calculation
-              Expanded(
-                child: _statCard(
-                  "Attendance",
-                  "95%",
-                  Icons.access_time_rounded,
-                  color: Colors.orange,
-                ),
-              _statCard(
-                "Attendance",
-                "95%",
-                Icons.access_time_rounded,
-                color: Colors.orange,
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -554,7 +550,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             var data = doc.data() as Map<String, dynamic>;
 
             String status = data['status'] ?? 'Pending';
-            Color statusColor = status == 'Completed' ? Colors.green : Colors.orange;
+            Color statusColor = status == 'Completed'
+                ? Colors.green
+                : Colors.orange;
             if (status == 'Pending') statusColor = Colors.blue;
 
             String dateStr = "";
@@ -629,54 +627,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTabToggle() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _tabButton("Work History", 0)),
-          Expanded(child: _tabButton("Peer Reviews", 1)),
-        ],
-      ),
-    );
-  }
-
-  Widget _tabButton(String label, int index) {
-    bool isActive = _selectedTab == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTab = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive ? primaryBlue : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.bold,
-            color: isActive ? Colors.white : Colors.grey,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildPeerReviewsList(String? email) {
     if (email == null) return const SizedBox();
 
     return StreamBuilder<QuerySnapshot>(
-      // Uses collectionGroup query for reviews assigned to this user
-      // Using known correct path: users/{uid}/reviews
+      // Using collectionGroup to find reviews across all projects
       stream: FirebaseFirestore.instance
           .collectionGroup('reviews_data')
           .where('targetUser', isEqualTo: email)
@@ -700,8 +655,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             var data =
                 snapshot.data!.docs[index].data() as Map<String, dynamic>;
             double rating = (data['rating'] ?? 0).toDouble();
-            String projectName = data['projectName'] ?? "Unknown Project";
             String comment = data['comment'] ?? "No comment";
+            String projectName = data['projectName'] ?? "Peer Review";
 
             return Container(
               padding: const EdgeInsets.all(20),
@@ -722,86 +677,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        projectName,
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Row(
-                        children: List.generate(5, (i) {
-                          return Icon(
-                            Icons.star_rounded,
-                            size: 16,
-                            color: i < rating ? Colors.amber : Colors.white24,
-                          );
-                        }),
-              return Container(
-                width: 200,
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3F6D9F), Color(0xFF1A3B5D)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryBlue.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            data['projectName'] ?? "Project",
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Text(
+                          projectName,
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    Row(
-                      children: List.generate(5, (i) {
-                        return Icon(
-                          Icons.star_rounded,
-                          size: 16,
-                          color: i < rating ? Colors.amber : Colors.white30,
-                        );
-                      }),
-                    ),
-                    Text(
-                      "\"${data['comment'] ?? 'No comment'}\"",
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
+                  Row(
+                    children: List.generate(5, (i) {
+                      return Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: i < rating ? Colors.amber : Colors.white30,
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     "\"$comment\"",
                     style: GoogleFonts.inter(
@@ -833,11 +737,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             );
           },
-                  ],
-                ),
-              );
-            },
-          ),
         );
       },
     );

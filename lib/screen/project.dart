@@ -9,6 +9,7 @@ import 'createtask.dart';
 import 'createmeeting.dart';
 import 'verifymeeting.dart';
 import 'review.dart';
+import '../services/notification_service.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final String projectId;
@@ -390,6 +391,21 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   .collection('projects')
                   .doc(widget.projectId)
                   .update({'status': 'Completed'});
+
+              // NEW: Notify members about completion
+              try {
+                await NotificationService().sendNotificationToRecipients(
+                  recipientEmails: members,
+                  title: "Project Completed",
+                  body:
+                      "${name ?? 'The project'} has been marked as completed. Please submit your peer reviews.",
+                  type: "project_complete",
+                  projectId: widget.projectId,
+                );
+              } catch (e) {
+                debugPrint("Error sending completion noti: $e");
+              }
+
               _showSnack("Project Completed!", Colors.green);
             },
             child: const Text("Confirm"),

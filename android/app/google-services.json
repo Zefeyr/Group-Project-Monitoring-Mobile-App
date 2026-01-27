@@ -12,7 +12,20 @@
           "package_name": "com.hakimi.collabquest.collab_quest"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "412623487000-cqrhsg2cc1ofkvqvp0gk9tmpqi05npo5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hakimi.collabquest.collab_quest",
+            "certificate_hash": "69ecd42cd4959e55c4b16c9da694f6582c3538c4"
+          }
+        },
+        {
+          "client_id": "412623487000-r59e86gq4lfsu8km12hao09fag89s90o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDrypALAkCtwbue2vlB_7oWDLL1oQk92y0"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "412623487000-r59e86gq4lfsu8km12hao09fag89s90o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "412623487000-gt9banfn0pp14u25vjv0a2i2emb4remj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.hakimi.collabquest.collabQuest"
+              }
+            }
+          ]
         }
       }
     }

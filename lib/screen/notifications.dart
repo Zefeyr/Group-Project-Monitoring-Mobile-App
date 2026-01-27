@@ -35,7 +35,7 @@ class NotificationSheet extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 10, 24, 20),
@@ -76,8 +76,10 @@ class NotificationSheet extends StatelessWidget {
                   .limit(50)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                if (snapshot.hasError)
+                  return Center(child: Text("Error: ${snapshot.error}"));
+                if (!snapshot.hasData)
+                  return const Center(child: CircularProgressIndicator());
 
                 final docs = snapshot.data!.docs;
                 if (docs.isEmpty) return _buildEmptyState();
@@ -95,12 +97,15 @@ class NotificationSheet extends StatelessWidget {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 0,
+                  ),
                   itemCount: grouped.keys.length,
                   itemBuilder: (context, index) {
                     final key = grouped.keys.elementAt(index);
                     final groupDocs = grouped[key]!;
-                    
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -116,7 +121,9 @@ class NotificationSheet extends StatelessWidget {
                             ),
                           ),
                         ),
-                        ...groupDocs.map((doc) => _buildNotificationItem(doc, user.uid)).toList(),
+                        ...groupDocs
+                            .map((doc) => _buildNotificationItem(doc, user.uid))
+                            .toList(),
                         const SizedBox(height: 10),
                       ],
                     );
@@ -137,31 +144,43 @@ class NotificationSheet extends StatelessWidget {
     final String title = data['title'] ?? 'Notification';
     final String body = data['body'] ?? '';
     final Timestamp? ts = data['createdAt'] as Timestamp?;
-    
+
     // Choose Icon & Color based on type
     IconData iconData = Icons.notifications_rounded;
     Color iconColor = Colors.orange;
     Color bgColor = Colors.orange.withOpacity(0.1);
 
     if (type == 'project') {
-      iconData = Icons.folder_rounded;
+      iconData = Icons.rocket_launch_rounded;
       iconColor = const Color(0xFF3F6D9F);
       bgColor = const Color(0xFF3F6D9F).withOpacity(0.1);
     } else if (type == 'invite') {
       iconData = Icons.mail_rounded;
       iconColor = Colors.purpleAccent;
       bgColor = Colors.purpleAccent.withOpacity(0.1);
+    } else if (type == 'meeting') {
+      iconData = Icons.videocam_rounded;
+      iconColor = Colors.green;
+      bgColor = Colors.green.withOpacity(0.1);
+    } else if (type == 'project_complete') {
+      iconData = Icons.check_circle_rounded;
+      iconColor = Colors.teal;
+      bgColor = Colors.teal.withOpacity(0.1);
+    } else if (type == 'review_request' || type == 'review_received') {
+      iconData = Icons.rate_review_rounded;
+      iconColor = Colors.orange;
+      bgColor = Colors.orange.withOpacity(0.1);
     }
 
     return GestureDetector(
       onTap: () {
         if (!isRead) {
           FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .collection('notifications')
-            .doc(doc.id)
-            .update({'isRead': true});
+              .collection('users')
+              .doc(uid)
+              .collection('notifications')
+              .doc(doc.id)
+              .update({'isRead': true});
         }
       },
       child: Container(
@@ -171,15 +190,17 @@ class NotificationSheet extends StatelessWidget {
           color: isRead ? Colors.white : const Color(0xFFF0F7FF),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-             color: isRead ? Colors.grey.shade100 : const Color(0xFF3F6D9F).withOpacity(0.2),
-             width: 1,
+            color: isRead
+                ? Colors.grey.shade100
+                : const Color(0xFF3F6D9F).withOpacity(0.2),
+            width: 1,
           ),
           boxShadow: [
-             BoxShadow(
-                color: Colors.black.withOpacity(0.015),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-             )
+            BoxShadow(
+              color: Colors.black.withOpacity(0.015),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Row(
@@ -188,10 +209,7 @@ class NotificationSheet extends StatelessWidget {
             Container(
               width: 45,
               height: 45,
-              decoration: BoxDecoration(
-                color: bgColor,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
               child: Icon(iconData, color: iconColor, size: 22),
             ),
             const SizedBox(width: 16),
@@ -199,32 +217,32 @@ class NotificationSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text(
-                     title,
-                     style: GoogleFonts.inter(
-                       fontSize: 15,
-                       fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
-                       color: const Color(0xFF1A3B5D),
-                     ),
-                   ),
-                   const SizedBox(height: 4),
-                   Text(
-                     body,
-                     style: GoogleFonts.inter(
-                       fontSize: 13,
-                       color: Colors.grey.shade600,
-                       height: 1.4,
-                     ),
-                   ),
-                   const SizedBox(height: 8),
-                   Text(
-                     _getTimeAgo(ts),
-                     style: GoogleFonts.inter(
-                       fontSize: 11,
-                       color: Colors.grey.shade400,
-                       fontWeight: FontWeight.w500,
-                     ),
-                   ),
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
+                      color: const Color(0xFF1A3B5D),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    body,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _getTimeAgo(ts),
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: Colors.grey.shade400,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -245,30 +263,34 @@ class NotificationSheet extends StatelessWidget {
   }
 
   Widget _buildEmptyState() {
-     return Center(
-        child: Column(
-           mainAxisAlignment: MainAxisAlignment.center,
-           children: [
-              Container(
-                 padding: const EdgeInsets.all(24),
-                 decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    shape: BoxShape.circle,
-                 ),
-                 child: Icon(Icons.notifications_none_rounded, size: 50, color: Colors.grey.shade300),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                 "No notifications yet",
-                 style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade400,
-                 ),
-              ),
-           ],
-        ),
-     );
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.notifications_none_rounded,
+              size: 50,
+              color: Colors.grey.shade300,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "No notifications yet",
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade400,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _getDateKey(DateTime date) {

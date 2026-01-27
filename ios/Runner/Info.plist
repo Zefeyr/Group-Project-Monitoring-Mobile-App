@@ -51,5 +51,16 @@
     <string>This app needs Bluetooth to broadcast a meeting signal to your team members.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>This app needs location access to discover nearby team members via Bluetooth.</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.412623487000-gt9banfn0pp14u25vjv0a2i2emb4remj</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
