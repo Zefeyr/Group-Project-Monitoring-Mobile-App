@@ -355,14 +355,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           itemBuilder: (context, index) {
             final data = docs[index].data() as Map<String, dynamic>;
             final isMe = data['senderId'] == _currentUser?.uid;
-            return _buildMessageBubble(data, isMe);
+            
+            // Check previous message (which is at index + 1 because of reverse list)
+            bool showName = true;
+            if (index < docs.length - 1) {
+              final prevData = docs[index + 1].data() as Map<String, dynamic>;
+              if (prevData['senderId'] == data['senderId']) {
+                showName = false;
+              }
+            }
+            
+            return _buildMessageBubble(data, isMe, showName);
           },
         );
       },
     );
   }
 
-  Widget _buildMessageBubble(Map<String, dynamic> data, bool isMe) {
+  Widget _buildMessageBubble(Map<String, dynamic> data, bool isMe, bool showName) {
     final senderName = data['senderName'] ?? 'Unknown';
     final text = data['text'] ?? '';
     final Timestamp? ts = data['createdAt'] as Timestamp?;
@@ -376,7 +386,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         crossAxisAlignment:
             isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          if (!isMe)
+          if (!isMe && showName)
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 4),
               child: Text(
