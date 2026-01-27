@@ -202,40 +202,33 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      await batch.commit();
+      // 3. NEW: Add user to 'reviewedBy' array in the main project document
+      // This allows filtering the project list without reading subcollections
+      final projectRef = FirebaseFirestore.instance
+          .collection('projects')
+          .doc(widget.projectId);
 
-      // 3. LOGICAL GATE: Check if the project is fully complete
-      await _checkAndCompleteProject();
+      batch.update(projectRef, {
+        'reviewedBy': FieldValue.arrayUnion([currentUserEmail])
+      });
+
+      await batch.commit();
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Reviews submitted!"),
+            content: Text("Reviews submitted! Project moved to History."),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _checkAndCompleteProject() async {
-    final reviewsSnap = await FirebaseFirestore.instance
-        .collection('projects')
-        .doc(widget.projectId)
-        .collection('reviews')
-        .get();
-
-    // If total reviews submitted matches total member count, move to History
-    if (reviewsSnap.docs.length >= widget.members.length) {
-      await FirebaseFirestore.instance
-          .collection('projects')
-          .doc(widget.projectId)
-          .update({'status': 'Completed'});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 }

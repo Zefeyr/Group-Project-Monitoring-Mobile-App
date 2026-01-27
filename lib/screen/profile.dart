@@ -15,6 +15,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final Color primaryBlue = const Color(0xFF1A3B5D);
   final User? currentUser = FirebaseAuth.instance.currentUser;
+  int _selectedTab = 0; // 0: Work History, 1: Peer Reviews
 
   @override
   Widget build(BuildContext context) {
@@ -32,15 +33,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             _buildStatsSection(currentUser!.email),
             const SizedBox(height: 20),
-            _buildSectionTitle("Work History"),
-            _buildWorkHistoryList(currentUser!.email),
-            const SizedBox(height: 30),
-            _buildSectionTitle("Peer Reviews"),
-            _buildPeerReviewsList(currentUser!.uid),
+
+            // Tab Toggle for Work & Reviews
+            _buildTabToggle(),
+            const SizedBox(height: 20),
+            _selectedTab == 0
+                ? _buildProjectHistoryList(currentUser!.email)
+                : _buildPeerReviewsList(currentUser!.uid),
             const SizedBox(height: 100), // Bottom padding for nav bar
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: primaryBlue,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProjectHistoryList(String? email) {
+    if (email == null) return const SizedBox();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('projects')
+          .where('reviewedBy', arrayContains: email)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: _emptyState("No completed projects yet."),
+          );
+        }
+
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          itemCount: snapshot.data!.docs.length,
+          separatorBuilder: (c, i) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            String name = data['name'] ?? "Project";
+            String subject = data['subject'] ?? "General";
+            Timestamp? deadline = data['deadline'];
+            String dateStr = deadline != null 
+               ? DateFormat('MMM d, y').format(deadline.toDate()) 
+               : "";
+
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.green.shade100),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    height: 40,
+                    width: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            color: primaryBlue,
+                          ),
+                        ),
+                        Text(
+                          dateStr.isNotEmpty ? "$subject • Due $dateStr" : subject,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -275,7 +375,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (snapshot.hasData) {
           totalTasks = snapshot.data!.docs.length;
           completed = snapshot.data!.docs
-              .where((doc) => doc['status'] == 'Completed')
+              .where((doc) => (doc['status'] ?? '').toString().toLowerCase() == 'completed')
               .length;
         }
 
@@ -283,7 +383,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Row(
             children: [
-              _statCard("Tasks", "$totalTasks", Icons.assignment_outlined),
+              _statCard(
+                "Tasks",
+                "$totalTasks",
+                Icons.assignment_outlined,
+              ),
               const SizedBox(width: 12),
               _statCard(
                 "Completed",
@@ -292,7 +396,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: Colors.green,
               ),
               const SizedBox(width: 12),
-              // Placeholder for future attendance calculation
               _statCard(
                 "Attendance",
                 "95%",
@@ -348,17 +451,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
+  Widget _buildTabToggle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _tabButton("Work History", 0)),
+          Expanded(child: _tabButton("Peer Reviews", 1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabButton(String label, int index) {
+    bool isActive = _selectedTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive ? primaryBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Text(
-          title,
-          style: GoogleFonts.outfit(
-            fontSize: 18,
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
-            color: primaryBlue,
+            color: isActive ? Colors.white : Colors.grey,
+            fontSize: 13,
           ),
         ),
       ),
@@ -369,7 +497,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (email == null) return const SizedBox();
 
     return StreamBuilder<QuerySnapshot>(
-      // Uses collectionGroup query - Requires Firestore Index
       stream: FirebaseFirestore.instance
           .collectionGroup('tasks')
           .where('assignedTo', isEqualTo: email)
@@ -377,9 +504,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .limit(10)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text("Error: ${snapshot.error}"));
-        }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _emptyState("No work history found yet.");
         }
@@ -394,10 +518,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             var doc = snapshot.data!.docs[index];
             var data = doc.data() as Map<String, dynamic>;
 
-            // Try to find status
             String status = data['status'] ?? 'Pending';
-            Color statusColor = Colors.orange;
-            if (status == 'Completed') statusColor = Colors.green;
+            Color statusColor = status == 'Completed' ? Colors.green : Colors.orange;
             if (status == 'Pending') statusColor = Colors.blue;
 
             String dateStr = "";
@@ -474,6 +596,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildPeerReviewsList(String uid) {
     return StreamBuilder<QuerySnapshot>(
+      // Using known correct path: users/{uid}/reviews
       stream: FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
@@ -507,11 +630,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryBlue.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            data['projectName'] ?? "Project",
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                     Row(
                       children: List.generate(5, (i) {
                         return Icon(
@@ -523,30 +669,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     Text(
                       "\"${data['comment'] ?? 'No comment'}\"",
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
                         fontStyle: FontStyle.italic,
                       ),
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline,
-                          color: Colors.white54,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          "Anonymous Peer",
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -559,12 +688,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _emptyState(String message) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Center(
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Text(
           message,
           style: GoogleFonts.inter(color: Colors.grey.shade400),
+          textAlign: TextAlign.center,
         ),
       ),
     );
