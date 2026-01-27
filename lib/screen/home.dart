@@ -250,6 +250,16 @@ class _HomeScreenState extends State<HomeScreen> {
         final docs = snapshot.data!.docs.where((doc) {
           if (_selectedFilter == 'All') return true;
           final isOwner = doc['ownerEmail'] == userEmail;
+          final data = doc.data() as Map<String, dynamic>;
+          
+          // NEW: If viewing Completed list, hide projects the user has already reviewed
+          if (isCompleted) {
+             List<dynamic> reviewedBy = data['reviewedBy'] ?? [];
+             if (reviewedBy.contains(userEmail)) return false;
+          }
+
+          if (_selectedFilter == 'All') return true;
+          final isOwner = data['ownerEmail'] == userEmail;
           return _selectedFilter == 'Leader' ? isOwner : !isOwner;
         }).toList();
 

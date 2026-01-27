@@ -72,11 +72,26 @@ class _ChatScreenState extends State<ChatScreen> {
                   }
 
                   // Filter projects based on search text (Client-side)
+                  // AND Filter out Completed + Reviewed projects
                   final allProjects = snapshot.data!.docs;
                   final filteredProjects = allProjects.where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
+                    
+                    // 1. Check Search
                     final name = (data['name'] ?? '').toString().toLowerCase();
-                    return name.contains(_searchText.toLowerCase());
+                    if (!name.contains(_searchText.toLowerCase())) return false;
+
+                    // 2. Check Completed & Reviewed
+                    final String status = data['status'] ?? 'Active';
+                    if (status == 'Completed') {
+                      final List<dynamic> reviewedBy = data['reviewedBy'] ?? [];
+                      // If I have already reviewed it, HIDE it.
+                      if (reviewedBy.contains(currentUser!.email)) {
+                        return false;
+                      }
+                    }
+
+                    return true;
                   }).toList();
 
                   if (filteredProjects.isEmpty) {

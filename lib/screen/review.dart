@@ -207,12 +207,23 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
 
       // 3. LOGICAL GATE: Check if the project is fully complete
       await _checkAndCompleteProject();
+      // 3. NEW: Add user to 'reviewedBy' array in the MAIN project doc
+      // This allows efficient filtering in queries (e.g. Chat Screen)
+      final projectRef =
+          FirebaseFirestore.instance.collection('projects').doc(widget.projectId);
+
+      batch.update(projectRef, {
+        'reviewedBy': FieldValue.arrayUnion([currentUserEmail]),
+      });
+
+      await batch.commit();
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Reviews submitted!"),
+            content: Text("Reviews submitted! Project moved to History."),
             backgroundColor: Colors.green,
           ),
         );
@@ -237,6 +248,14 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
           .collection('projects')
           .doc(widget.projectId)
           .update({'status': 'Completed'});
+    }
+  }
+}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 }
