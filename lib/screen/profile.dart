@@ -34,6 +34,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildStatsSection(currentUser!.email),
             const SizedBox(height: 20),
 
+            _buildTabToggle(),
+            const SizedBox(height: 20),
+            _selectedTab == 0
+                ? _buildWorkHistoryList(currentUser!.email)
+                : _buildPeerReviewsList(currentUser!.email),
             // Tab Toggle for Work & Reviews
             _buildTabToggle(),
             const SizedBox(height: 20),
@@ -446,39 +451,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     IconData icon, {
     Color color = const Color(0xFF1A3B5D),
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: primaryBlue,
-              ),
-            ),
-            Text(
-              label,
-              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: primaryBlue,
+            ),
     );
   }
 
@@ -519,7 +515,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: isActive ? Colors.white : Colors.grey,
             fontSize: 13,
           ),
-        ),
+          Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
