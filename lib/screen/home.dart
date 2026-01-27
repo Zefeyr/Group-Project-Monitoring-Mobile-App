@@ -24,12 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       _buildHomeDashboard(),
-      const Center(child: Text('Task List')),
-      const Center(child: Text('Chat Room')),
-      const ProfileScreen(), // Use ProfileScreen here
       const TaskScreen(),
       const ChatScreen(),
-      const Center(child: Text('User Profile')),
+      const ProfileScreen(),
     ];
 
     return Scaffold(
@@ -455,6 +452,15 @@ class _HomeScreenState extends State<HomeScreen> {
               .collection('chatMeta')
               .snapshots(),
           builder: (context, metaSnap) {
+            if (metaSnap.hasError) {
+               // Ignore error, show icon without badge
+               return Icon(
+                icon,
+                color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+                size: 24,
+              );
+            }
+
             int totalUnread = 0;
             if (metaSnap.hasData) {
               // Map Meta

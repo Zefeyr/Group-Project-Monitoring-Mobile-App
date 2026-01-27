@@ -91,6 +91,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         .collection('chatMeta')
                         .snapshots(),
                     builder: (context, metaSnapshot) {
+                      if (metaSnapshot.hasError) {
+                        print("ChatMeta Error: ${metaSnapshot.error}");
+                        // Fallback: Proceed without badges
+                      }
+                      
                       // Parse Meta into Map<ProjectId, lastSeenCount>
                       Map<String, int> lastSeenMap = {};
                       if (metaSnapshot.hasData) {
