@@ -46,11 +46,10 @@ class _TaskScreenState extends State<TaskScreen> {
         ),
         body: StreamBuilder<QuerySnapshot>(
           // Fetch all projects where the user is a member
-          stream:
-              FirebaseFirestore.instance
-                  .collection('projects')
-                  .where('members', arrayContains: currentUser!.email)
-                  .snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('projects')
+              .where('members', arrayContains: currentUser!.email)
+              .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -148,15 +147,18 @@ class _AllTasksTabState extends State<AllTasksTab> {
     _subscriptions.clear();
     _projectTasks.clear();
 
-    if (widget.projects.isEmpty) {
+    // Filter out completed projects
+    final activeProjects = widget.projects.where((p) {
+      final data = p.data() as Map<String, dynamic>;
+      return (data['status'] ?? 'Active') != 'Completed';
+    }).toList();
+
+    if (activeProjects.isEmpty) {
       _tasksController.add([]);
       return;
     }
 
-    for (var project in widget.projects) {
-      // Stream ALL tasks for now, then filter/sort client side to avoid complex composite indexes
-      // If we used .where('assignedTo', isEqualTo: widget.userEmail), we might need an index
-      // if we also sorted. For robustness, we fetch and filter in memory here.
+    for (var project in activeProjects) {
       final sub = project.reference
           .collection('tasks')
           .snapshots()
@@ -164,7 +166,7 @@ class _AllTasksTabState extends State<AllTasksTab> {
             _projectTasks[project.id] = snapshot.docs;
             _emitCombined();
           }, onError: (e) {
-             print("Error listening to project ${project.id}: $e");
+            print("Error listening to project ${project.id}: $e");
           });
       _subscriptions.add(sub);
     }
@@ -172,7 +174,8 @@ class _AllTasksTabState extends State<AllTasksTab> {
 
   void _emitCombined() {
     try {
-      final allTasks = _projectTasks.values.expand((element) => element).toList();
+      final allTasks =
+          _projectTasks.values.expand((element) => element).toList();
 
       // Filter: Only MY Tasks
       if (widget.userEmail != null) {
@@ -189,7 +192,6 @@ class _AllTasksTabState extends State<AllTasksTab> {
 
         if (da == null || db == null) return 0;
 
-        // SAFE TIMESTAMP PARSING
         final ta = da['deadline'];
         final tb = db['deadline'];
 
@@ -197,7 +199,7 @@ class _AllTasksTabState extends State<AllTasksTab> {
         final DateTime? dateB = (tb is Timestamp) ? tb.toDate() : null;
 
         if (dateA == null && dateB == null) return 0;
-        if (dateA == null) return 1; // Put no-deadline tasks at bottom
+        if (dateA == null) return 1;
         if (dateB == null) return -1;
 
         return dateA.compareTo(dateB);
@@ -206,7 +208,6 @@ class _AllTasksTabState extends State<AllTasksTab> {
       _tasksController.add(allTasks);
     } catch (e) {
       print("Error processing tasks: $e");
-      // Don't crash the stream, just log
     }
   }
 
@@ -225,48 +226,89 @@ class _AllTasksTabState extends State<AllTasksTab> {
       stream: _tasksController.stream,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-           // Should ideally show loader, but with StreamController it might be empty initially
-           return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
 
         final tasks = snapshot.data!;
-        if (tasks.isEmpty) {
+        
+        // Split tasks into Active and Completed
+        final activeTasks = <DocumentSnapshot>[];
+        final completedTasks = <DocumentSnapshot>[];
+
+        for (var t in tasks) {
+           final data = t.data() as Map<String, dynamic>;
+           if ((data['status'] ?? 'Active') == 'Completed') {
+             completedTasks.add(t);
+           } else {
+             activeTasks.add(t);
+           }
+        }
+
+        if (activeTasks.isEmpty && completedTasks.isEmpty) {
           return Center(
-             child: Text("No tasks found", style: GoogleFonts.inter(color: Colors.grey)),
+            child: Text(
+              "No tasks found",
+              style: GoogleFonts.inter(color: Colors.grey),
+            ),
           );
         }
 
-        return ListView.separated(
+        return ListView(
           padding: const EdgeInsets.all(20),
-          itemCount: tasks.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final taskDoc = tasks[index];
-            final data = taskDoc.data() as Map<String, dynamic>;
+          children: [
+            // ACTIVE TASKS
+            ...activeTasks.map((taskDoc) => _buildTaskItem(taskDoc)),
 
-            // Resolve Project Name safely
-            final projectId = taskDoc.reference.parent.parent!.id;
-            String projectName = 'Unknown Project';
-            try {
-              final project = widget.projects.firstWhere((p) => p.id == projectId);
-              final pData = project.data() as Map<String, dynamic>;
-              projectName = pData['name'] ?? 'Untitled';
-            } catch (e) {
-              if (widget.projects.isNotEmpty) {
-                 final pData = widget.projects.first.data() as Map<String, dynamic>;
-                 projectName = pData['name'] ?? 'Untitled';
-              }
-            }
-
-            return TaskCard(
-              task: data,
-              projectName: projectName,
-              primaryBlue: const Color(0xFF1A3B5D),
-            );
-          },
+            // COMPLETED TASKS SECTION
+            if (completedTasks.isNotEmpty) ...[
+              const SizedBox(height: 30),
+               Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 10),
+                child: Text(
+                  "Completed Tasks",
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+              ...completedTasks.map((taskDoc) => _buildTaskItem(taskDoc, isDone: true)),
+            ],
+            
+            const SizedBox(height: 50),
+          ],
         );
       },
     );
+  }
+
+  Widget _buildTaskItem(DocumentSnapshot taskDoc, {bool isDone = false}) {
+     final data = taskDoc.data() as Map<String, dynamic>;
+     // Resolve Project Name safely
+      final projectId = taskDoc.reference.parent.parent!.id;
+      String projectName = 'Unknown Project';
+      try {
+        final project = widget.projects.firstWhere((p) => p.id == projectId);
+        final pData = project.data() as Map<String, dynamic>;
+        projectName = pData['name'] ?? 'Untitled';
+      } catch (e) {
+        if (widget.projects.isNotEmpty) {
+           final pData = widget.projects.first.data() as Map<String, dynamic>;
+           projectName = pData['name'] ?? 'Untitled';
+        }
+      }
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: TaskCard(
+          task: data,
+          taskRef: taskDoc.reference,
+          projectName: projectName,
+          primaryBlue: const Color(0xFF1A3B5D),
+          isDoneSection: isDone,
+        ),
+      );
   }
 }
 
@@ -282,11 +324,26 @@ class ByProjectTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Filter out completed projects
+    final activeProjects = projects.where((p) {
+       final data = p.data() as Map<String, dynamic>;
+       return (data['status'] ?? 'Active') != 'Completed';
+    }).toList();
+
+    if (activeProjects.isEmpty) {
+       return Center(
+           child: Text(
+             "No active projects",
+             style: GoogleFonts.inter(color: Colors.grey.shade500),
+           )
+       );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      itemCount: projects.length,
+      itemCount: activeProjects.length,
       itemBuilder: (context, index) {
-        final project = projects[index];
+        final project = activeProjects[index];
         final pData = project.data() as Map<String, dynamic>;
 
         return Container(
@@ -318,25 +375,22 @@ class ByProjectTab extends StatelessWidget {
             ),
             subtitle: Text(
               pData['subject'] ?? 'General',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade600),
             ),
             children: [
               StreamBuilder<QuerySnapshot>(
-                stream:
-                    project.reference
-                        .collection('tasks')
-                        .where('assignedTo', isEqualTo: userEmail) // FILTER APPLIED
-                        .orderBy('deadline', descending: false)
-                        .snapshots(),
+                stream: project.reference
+                    .collection('tasks')
+                    .where('assignedTo', isEqualTo: userEmail)
+                    .orderBy('deadline', descending: false)
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
-                     return Padding(
-                       padding: const EdgeInsets.all(16.0),
-                       child: Text("Error loading tasks: ${snapshot.error}", style: const TextStyle(color: Colors.red, fontSize: 12)),
-                     );
+                    return Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text("Error loading tasks: ${snapshot.error}",
+                          style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    );
                   }
                   if (!snapshot.hasData) {
                     return const Padding(
@@ -344,12 +398,19 @@ class ByProjectTab extends StatelessWidget {
                       child: CircularProgressIndicator(),
                     );
                   }
-                  final tasks = snapshot.data!.docs;
+                  
+                  // Filter out completed tasks here manually or via query if index existed.
+                  // Since we are inside StreamBuilder, we can just filter the list.
+                  final tasks = snapshot.data!.docs.where((doc) {
+                     final tData = doc.data() as Map<String, dynamic>;
+                     return (tData['status'] ?? 'Active') != 'Completed';
+                  }).toList();
+
                   if (tasks.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.all(20),
                       child: Text(
-                        "No tasks assigned to you",
+                        "No pending tasks",
                         style: GoogleFonts.inter(
                           color: Colors.grey,
                           fontStyle: FontStyle.italic,
@@ -365,9 +426,11 @@ class ByProjectTab extends StatelessWidget {
                     itemCount: tasks.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, idx) {
-                      final tData = tasks[idx].data() as Map<String, dynamic>;
+                      final tDoc = tasks[idx];
+                      final tData = tDoc.data() as Map<String, dynamic>;
                       return TaskCard(
                         task: tData,
+                        taskRef: tDoc.reference,
                         projectName: null,
                         primaryBlue: const Color(0xFF1A3B5D),
                         compact: true,
@@ -390,16 +453,20 @@ class ByProjectTab extends StatelessWidget {
 
 class TaskCard extends StatelessWidget {
   final Map<String, dynamic> task;
+  final DocumentReference? taskRef;
   final String? projectName;
   final Color primaryBlue;
   final bool compact;
+  final bool isDoneSection;
 
   const TaskCard({
     super.key,
     required this.task,
+    this.taskRef,
     this.projectName,
     required this.primaryBlue,
     this.compact = false,
+    this.isDoneSection = false,
   });
 
   @override
@@ -407,14 +474,20 @@ class TaskCard extends StatelessWidget {
     // Format Date safely
     String dateStr = "No Date";
     Color dateColor = Colors.grey;
-    
-    // SAFE PARSING
+
     if (task['deadline'] != null && task['deadline'] is Timestamp) {
       final dt = (task['deadline'] as Timestamp).toDate();
+      
+      // If done, show "Completed on" (optional, but lets just show deadline)
+      // Or we can just keep deadline.
       dateStr = DateFormat('MMM d, y').format(dt);
-      if (dt.isBefore(DateTime.now())) {
+      
+      if (!isDoneSection && dt.isBefore(DateTime.now())) {
         dateColor = Colors.redAccent;
         dateStr += " (Overdue)";
+      } else if (isDoneSection) {
+        dateColor = Colors.green;
+        dateStr += " (Done)";
       } else {
         dateColor = primaryBlue;
       }
@@ -423,7 +496,7 @@ class TaskCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
-        color: compact ? const Color(0xFFF8F9FA) : Colors.white,
+        color: isDoneSection ? Colors.grey.shade50 : (compact ? const Color(0xFFF8F9FA) : Colors.white),
         borderRadius: BorderRadius.circular(12),
         border: compact ? null : Border.all(color: Colors.grey.shade200),
       ),
@@ -433,7 +506,7 @@ class TaskCard extends StatelessWidget {
             width: 4,
             height: 40,
             decoration: BoxDecoration(
-              color: dateColor,
+              color: isDoneSection ? Colors.green : (compact ? primaryBlue : dateColor),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -460,7 +533,8 @@ class TaskCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
-                    color: Colors.black87,
+                    color: isDoneSection ? Colors.grey : Colors.black87,
+                    decoration: isDoneSection ? TextDecoration.lineThrough : null,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -480,25 +554,57 @@ class TaskCard extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (task['assignedTo'] != null) ...[
-                      const SizedBox(width: 12),
-                      Icon(Icons.person_outline, size: 12, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          task['assignedTo'],
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ],
             ),
+          ),
+          if (!isDoneSection && taskRef != null)
+            IconButton(
+              onPressed: () => _showCompleteDialog(context),
+              icon: Icon(
+                Icons.check_circle_outline_rounded,
+                color: Colors.grey.shade400,
+                size: 28,
+              ),
+              tooltip: "Mark as Done",
+            ),
+          if (isDoneSection)
+             Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
+        ],
+      ),
+    );
+  }
+
+  void _showCompleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          "Complete Task?",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        content: const Text("This will move the task to 'Completed Tasks'."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: primaryBlue),
+            onPressed: () async {
+              Navigator.pop(context);
+              if (taskRef != null) {
+                await taskRef!.update({'status': 'Completed'});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Task completed!"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: const Text("Confirm", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

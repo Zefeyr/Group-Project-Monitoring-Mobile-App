@@ -202,14 +202,13 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // 3. NEW: Add user to 'reviewedBy' array in the main project document
-      // This allows filtering the project list without reading subcollections
-      final projectRef = FirebaseFirestore.instance
-          .collection('projects')
-          .doc(widget.projectId);
+      // 3. NEW: Add user to 'reviewedBy' array in the MAIN project doc
+      // This allows efficient filtering in queries (e.g. Chat Screen)
+      final projectRef =
+          FirebaseFirestore.instance.collection('projects').doc(widget.projectId);
 
       batch.update(projectRef, {
-        'reviewedBy': FieldValue.arrayUnion([currentUserEmail])
+        'reviewedBy': FieldValue.arrayUnion([currentUserEmail]),
       });
 
       await batch.commit();
