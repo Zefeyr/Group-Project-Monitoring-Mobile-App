@@ -384,17 +384,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     bool isSelected = _currentIndex == index;
+    
+    // Custom Icon for Chat (Index 2) to support Badge
+    Widget iconWidget;
+    if (index == 2) {
+      iconWidget = _buildChatIconWithBadge(icon, isSelected);
+    } else {
+      iconWidget = Icon(
+        icon,
+        color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+        size: 24,
+      );
+    }
+
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-            size: 24,
-          ),
+          iconWidget,
           if (isSelected)
             Text(
               label,
@@ -406,6 +415,99 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildChatIconWithBadge(IconData icon, bool isSelected) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Icon(
+        icon,
+        color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+        size: 24,
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      // Listen to Projects
+      stream: FirebaseFirestore.instance
+          .collection('projects')
+          .where('members', arrayContains: user.email)
+          .snapshots(),
+      builder: (context, projectSnap) {
+        if (!projectSnap.hasData) {
+           return Icon(
+            icon,
+            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+            size: 24,
+          );
+        }
+        
+        return StreamBuilder<QuerySnapshot>(
+          // Listen to User Meta
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('chatMeta')
+              .snapshots(),
+          builder: (context, metaSnap) {
+            int totalUnread = 0;
+            if (metaSnap.hasData) {
+              // Map Meta
+              Map<String, int> lastSeenMap = {};
+              for (var doc in metaSnap.data!.docs) {
+                 lastSeenMap[doc.id] = (doc.data() as Map<String, dynamic>)['lastSeenCount'] ?? 0;
+              }
+
+              // Calc Total
+              for (var pDoc in projectSnap.data!.docs) {
+                final pData = pDoc.data() as Map<String, dynamic>;
+                final int msgCount = pData['msgCount'] ?? 0;
+                final int lastSeen = lastSeenMap[pDoc.id] ?? 0;
+                if (msgCount > lastSeen) {
+                  totalUnread += (msgCount - lastSeen);
+                }
+              }
+            }
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+                  size: 24,
+                ),
+                if (totalUnread > 0)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        totalUnread > 99 ? '99+' : '$totalUnread',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

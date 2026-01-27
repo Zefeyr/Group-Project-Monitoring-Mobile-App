@@ -18,6 +18,29 @@ class _ChatScreenState extends State<ChatScreen> {
   final Color primaryBlue = const Color(0xFF1A3B5D);
   String _searchText = "";
 
+  // PRESET OPTIONS (Should closely match ChatDetail)
+  final List<Color> _chatColors = [
+    Colors.black87,
+    const Color(0xFF1A3B5D),
+    Colors.redAccent,
+    Colors.teal,
+    Colors.orange,
+    Colors.purple,
+    Colors.indigo,
+    Colors.pinkAccent,
+  ];
+
+  final List<IconData> _chatIcons = [
+    Icons.tag_rounded,
+    Icons.code_rounded,
+    Icons.work_rounded,
+    Icons.chat_bubble_rounded,
+    Icons.school_rounded,
+    Icons.lightbulb_rounded,
+    Icons.star_rounded,
+    Icons.rocket_launch_rounded,
+  ];
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -60,13 +83,39 @@ class _ChatScreenState extends State<ChatScreen> {
                     return _buildEmptyState("No chats found");
                   }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: filteredProjects.length,
-                    itemBuilder: (context, index) {
-                      final project = filteredProjects[index];
-                      final pData = project.data() as Map<String, dynamic>;
-                      return _buildChatTile(project.id, pData);
+                  // LISTENER for User's Chat Meta (Last Seen Counts)
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(currentUser!.uid)
+                        .collection('chatMeta')
+                        .snapshots(),
+                    builder: (context, metaSnapshot) {
+                      // Parse Meta into Map<ProjectId, lastSeenCount>
+                      Map<String, int> lastSeenMap = {};
+                      if (metaSnapshot.hasData) {
+                        for (var doc in metaSnapshot.data!.docs) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            lastSeenMap[doc.id] = data['lastSeenCount'] ?? 0;
+                        }
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: filteredProjects.length,
+                        itemBuilder: (context, index) {
+                          final project = filteredProjects[index];
+                          final pData = project.data() as Map<String, dynamic>;
+                          final projectId = project.id;
+                          
+                          // Badge Logic
+                          final int msgCount = pData['msgCount'] ?? 0;
+                          final int lastSeen = lastSeenMap[projectId] ?? 0;
+                          final int unread = msgCount - lastSeen;
+
+                          return _buildChatTile(projectId, pData, unread);
+                        },
+                      );
                     },
                   );
                 },
@@ -78,90 +127,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Messages',
-                style: GoogleFonts.outfit(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: primaryBlue,
-                ),
-              ),
-              // Edit button removed as requested
-            ],
-          ),
-          const SizedBox(height: 20),
-          // Search Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => setState(() => _searchText = val),
-              decoration: InputDecoration(
-                hintText: "Search group chat...",
-                hintStyle: GoogleFonts.inter(color: Colors.grey.shade400),
-                border: InputBorder.none,
-                icon: Icon(Icons.search_rounded, color: Colors.grey.shade400),
-                suffixIcon: _searchText.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchText = "");
-                        },
-                      )
-                    : null,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // PRESET OPTIONS (Should closely match ChatDetail)
-  final List<Color> _chatColors = [
-    Colors.black87,
-    const Color(0xFF1A3B5D),
-    Colors.redAccent,
-    Colors.teal,
-    Colors.orange,
-    Colors.purple,
-    Colors.indigo,
-    Colors.pinkAccent,
-  ];
-
-  final List<IconData> _chatIcons = [
-    Icons.tag_rounded,
-    Icons.code_rounded,
-    Icons.work_rounded,
-    Icons.chat_bubble_rounded,
-    Icons.school_rounded,
-    Icons.lightbulb_rounded,
-    Icons.star_rounded,
-    Icons.rocket_launch_rounded,
-  ];
-
-  Widget _buildChatTile(String projectId, Map<String, dynamic> projectData) {
+  // Updated Signature
+  Widget _buildChatTile(String projectId, Map<String, dynamic> projectData, int unreadCount) {
     // RESOLVE CUSTOM SETTINGS
     Color iconBgColor = Colors.black87;
     IconData iconData = Icons.tag_rounded;
@@ -259,7 +226,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         children: [
                           Expanded(child: _buildMessagePreview(projectId)),
                           const SizedBox(width: 8),
-                          _buildUnreadBadge(projectId),
+                          _buildUnreadBadge(unreadCount),
                         ],
                       ),
                     ],
@@ -269,6 +236,108 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // Updated Badge Widget
+  Widget _buildUnreadBadge(int count) {
+    if (count <= 0) return const SizedBox();
+
+    final String display = count > 99 ? '99+' : count.toString();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.redAccent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        display,
+        style: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String msg) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chat_bubble_outline, size: 60, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            msg,
+            style: GoogleFonts.inter(
+              color: Colors.grey.shade500,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Messages',
+                style: GoogleFonts.outfit(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: primaryBlue,
+                ),
+              ),
+              // Edit button removed as requested
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Search Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchText = val),
+              decoration: InputDecoration(
+                hintText: "Search group chat...",
+                hintStyle: GoogleFonts.inter(color: Colors.grey.shade400),
+                border: InputBorder.none,
+                icon: Icon(Icons.search_rounded, color: Colors.grey.shade400),
+                suffixIcon: _searchText.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchText = "");
+                        },
+                      )
+                    : null,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -297,9 +366,6 @@ class _ChatScreenState extends State<ChatScreen> {
         final lastMsg = snapshot.data!.docs.first.data() as Map<String, dynamic>;
         final text = lastMsg['text'] ?? '[Image]';
         final sender = lastMsg['senderName'] ?? 'Unknown';
-        // If sender is me, show "You: ...", else "Name: ..."
-        // We'll just show the text for cleaner look or "Name: Text"
-        // Let's go with simple text for now to match typical chat apps
         
         return Text(
           "$sender: $text",
@@ -340,7 +406,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (now.difference(dt).inDays == 0) {
            timeStr = DateFormat('h:mm a').format(dt);
         } else if (now.difference(dt).inDays < 7) {
-           timeStr = DateFormat('E').format(dt); // Mon, Tue
+           timeStr = DateFormat('E').format(dt);
         } else {
            timeStr = DateFormat('MM/dd').format(dt);
         }
@@ -354,46 +420,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildUnreadBadge(String projectId) {
-    // Placeholder: In a real app, compare lastRead timestamp vs lastMessage timestamp
-    // For this UI demo, we'll just return SizedBox or a static badge if needed.
-    // User requested "some sort of badge". We'll hide it for "No messages" cases implicitly
-    // because this widget is placed next to the preview.
-    // Let's assume no unread for now to keep it clean, or we can check a field.
-    return const SizedBox(); 
-    
-    /* Example Badge UI:
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: const BoxDecoration(
-        color: Colors.redAccent,
-        shape: BoxShape.circle,
-      ),
-      child: const Text('1', style: TextStyle(color: Colors.white, fontSize: 10)),
-    );
-    */
-  }
-
-  Widget _buildEmptyState(String msg) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.chat_bubble_outline, size: 60, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            msg,
-            style: GoogleFonts.inter(
-              color: Colors.grey.shade500,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

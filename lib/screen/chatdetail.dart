@@ -52,6 +52,31 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   void initState() {
     super.initState();
     _fetchUserName();
+    _markAsRead();
+  }
+
+  void _markAsRead() {
+    if (_currentUser == null) return;
+    // Listen to Project Doc to always mark as read while on this screen
+    // (Could be optimized to only update when count changes, but this ensures sync)
+    FirebaseFirestore.instance
+        .collection('projects')
+        .doc(widget.projectId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists && mounted) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        final int currentMsgCount = data['msgCount'] ?? 0;
+        
+        // Update User's lastSeenCount for this project
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(_currentUser!.uid)
+            .collection('chatMeta')
+            .doc(widget.projectId)
+            .set({'lastSeenCount': currentMsgCount}, SetOptions(merge: true));
+      }
+    });
   }
 
   Future<void> _fetchUserName() async {
@@ -84,6 +109,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _messageController.clear();
 
     try {
+      // 1. Add Message
       await FirebaseFirestore.instance
           .collection('projects')
           .doc(widget.projectId)
@@ -94,6 +120,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             'senderName': _currentUserName,
             'senderEmail': _currentUser!.email,
             'createdAt': FieldValue.serverTimestamp(),
+          });
+
+      // 2. Increment Message Count on Project Doc
+      await FirebaseFirestore.instance
+          .collection('projects')
+          .doc(widget.projectId)
+          .update({
+            'msgCount': FieldValue.increment(1),
           });
 
       if (_scrollController.hasClients) {
