@@ -90,8 +90,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         setState(() {
-          _currentUserName =
-              "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}".trim();
+          // Prioritize 'name' (new format), fallback to first/last (old format), then email
+          _currentUserName = data['name'] ?? "";
+          
+          if (_currentUserName.isEmpty) {
+             _currentUserName = "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}".trim();
+          }
+          
           if (_currentUserName.isEmpty) {
             _currentUserName = _currentUser!.email?.split('@')[0] ?? "User";
           }

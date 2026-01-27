@@ -323,6 +323,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'semester': _selectedSemester,
             'skills': _skillsController.text.trim(),
             'bio': _bioController.text.trim(),
+            'email': user.email, // Ensure email is saved/updated
             if (photoUrl != null) 'photo_url': photoUrl,
             'updated_at': FieldValue.serverTimestamp(),
           });

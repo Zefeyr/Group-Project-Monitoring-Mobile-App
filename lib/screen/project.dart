@@ -461,16 +461,45 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    isMe ? "You" : email,
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : primaryBlue,
+                  if (isMe)
+                    Text(
+                      "You",
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? Colors.white : primaryBlue,
+                      ),
+                    )
+                  else
+                    FutureBuilder<QuerySnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .where('email', isEqualTo: email.trim())
+                          .limit(1)
+                          .get(),
+                      builder: (context, snapshot) {
+                        String name = "";
+                        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                          var data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+                          name = data['name'] ?? "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}".trim();
+                        }
+                        
+                        if (name.isEmpty) {
+                           name = email.split('@')[0];
+                        }
+                        
+                        return Text(
+                          name,
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : primaryBlue,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                   Text(
                     isLead ? "Project Lead" : "Team Member",
                     style: GoogleFonts.inter(
@@ -657,11 +686,36 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              ...members
-                  .map(
-                    (email) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
+              ...members.map(
+                (rawEmail) {
+                  final email = rawEmail.trim();
+                  print("Fetching for email: '$email'"); // Debug print
+                  
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: FutureBuilder<QuerySnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .where('email', isEqualTo: email)
+                          .limit(1)
+                          .get(),
+                    builder: (context, snapshot) {
+                      String displayName = "";
+                      if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                        print("Found user for $email: ${snapshot.data!.docs.length}"); // Debug
+                        var userData = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+                        displayName = userData['name'] ?? 
+                            "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
+                      } else {
+                         print("No user found for $email (snapshot has data: ${snapshot.hasData})");
+                      }
+                      
+                      // Fallback for legacy users: Extract name from email
+                      if (displayName.isEmpty) {
+                        displayName = email.split('@')[0];
+                      }
+                      
+                      return Row(
                         children: [
                           const Icon(
                             Icons.person_outline,
@@ -669,18 +723,23 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             color: Colors.blue,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            email,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: primaryBlue,
+                          Expanded(
+                            child: Text(
+                              "$email - $displayName",
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: primaryBlue,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  )
-                  .toList(),
+                      );
+                    },
+                  ),
+                );
+                },
+              ).toList(),
             ],
           ],
         ),

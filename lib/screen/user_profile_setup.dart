@@ -7,14 +7,20 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'home.dart';
 
+
 class UserProfileSetup extends StatefulWidget {
-  const UserProfileSetup({super.key});
+  final String name;
+  const UserProfileSetup({super.key, required this.name});
 
   @override
   State<UserProfileSetup> createState() => _UserProfileSetupState();
 }
 
 class _UserProfileSetupState extends State<UserProfileSetup> {
+// ... (existing code)
+
+
+
   final _matricController = TextEditingController();
   final _majorController = TextEditingController();
   final _skillsController = TextEditingController();
@@ -243,6 +249,7 @@ class _UserProfileSetupState extends State<UserProfileSetup> {
                       String? photoUrl = await _uploadImage(user.uid);
 
                       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+                        'name': widget.name,
                         'matric_no': _matricController.text.trim(),
                         'kulliyyah': _selectedKulliyyah,
                         'major': _majorController.text.trim(),

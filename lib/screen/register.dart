@@ -127,10 +127,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         
                         if (!mounted) return;
                         
+
                         // Navigate to Profile Setup on success
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const UserProfileSetup()),
+                          MaterialPageRoute(
+                            builder: (context) => UserProfileSetup(name: _nameController.text.trim()),
+                          ),
                         );
                       } on FirebaseAuthException catch (e) {
                         String message = "An error occurred";
