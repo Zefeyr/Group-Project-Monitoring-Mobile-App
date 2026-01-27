@@ -269,35 +269,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .where('assignedTo', isEqualTo: email)
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint("ProfileStats Error: ${snapshot.error}");
+          return _statCard(
+            "Error",
+            "!",
+            Icons.error_outline,
+            color: Colors.red,
+          );
+        }
+
         int totalTasks = 0;
         int completed = 0;
 
         if (snapshot.hasData) {
-          totalTasks = snapshot.data!.docs.length;
-          completed = snapshot.data!.docs
-              .where((doc) => doc['status'] == 'Completed')
-              .length;
+          final docs = snapshot.data!.docs;
+          debugPrint("ProfileStats: Found ${docs.length} tasks for $email");
+          totalTasks = docs.length;
+          completed = docs.where((doc) {
+            final status = doc['status'] as String? ?? '';
+            return status.toLowerCase() == 'completed';
+          }).length;
+        } else {
+          debugPrint("ProfileStats: No data yet/Loading...");
         }
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Row(
             children: [
-              _statCard("Tasks", "$totalTasks", Icons.assignment_outlined),
+              Expanded(
+                child: _statCard(
+                  "Tasks",
+                  "$totalTasks",
+                  Icons.assignment_outlined,
+                ),
+              ),
               const SizedBox(width: 12),
-              _statCard(
-                "Completed",
-                "$completed",
-                Icons.check_circle_outline,
-                color: Colors.green,
+              Expanded(
+                child: _statCard(
+                  "Completed",
+                  "$completed",
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                ),
               ),
               const SizedBox(width: 12),
               // Placeholder for future attendance calculation
-              _statCard(
-                "Attendance",
-                "95%",
-                Icons.access_time_rounded,
-                color: Colors.orange,
+              Expanded(
+                child: _statCard(
+                  "Attendance",
+                  "95%",
+                  Icons.access_time_rounded,
+                  color: Colors.orange,
+                ),
               ),
             ],
           ),
@@ -312,38 +337,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     IconData icon, {
     Color color = const Color(0xFF1A3B5D),
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: primaryBlue,
             ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: primaryBlue,
-              ),
-            ),
-            Text(
-              label,
-              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
-            ),
-          ],
-        ),
+          ),
+          Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }

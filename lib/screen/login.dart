@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widget/app_logo.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home.dart';
 import 'register.dart';
@@ -82,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.lock_person_rounded, size: 80, color: Color(0xFF1A3B5D)),
+                  const AppLogo(size: 100),
                   const SizedBox(height: 30),
                   
                   _buildGlassTextField(

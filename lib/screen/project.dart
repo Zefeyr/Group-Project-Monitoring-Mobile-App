@@ -707,9 +707,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   width: isMe ? 2 : 1,
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
                   Text(
                     isMe ? "You" : email.split('@')[0],
@@ -726,8 +724,28 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       color: isSelected ? Colors.white70 : Colors.grey,
                     ),
                   ),
-                  const Spacer(),
-                  _buildMiniTaskBadge(email, isSelected),
+                  if (!isMe)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: InkWell(
+                        onTap: () => _handleReview(context, email),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white.withOpacity(0.2)
+                                : primaryBlue.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.rate_review_outlined,
+                            size: 14,
+                            color: isSelected ? Colors.white : primaryBlue,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -936,5 +954,50 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleReview(BuildContext context, String email) async {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Fetching member details...")));
+
+    try {
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        final userDoc = userQuery.docs.first;
+        final uid = userDoc.id;
+        final name = userDoc.data()['name'] ?? email;
+
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SubmitReviewScreen(
+                targetUid: uid,
+                targetEmail: email,
+                targetName: name,
+              ),
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Member profile not found.")),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    }
   }
 }
