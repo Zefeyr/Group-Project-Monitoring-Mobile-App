@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../widget/app_logo.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login.dart';
 import 'user_profile_setup.dart';
@@ -66,7 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                    // Optional Icon
-                  const Icon(Icons.person_add_alt_1_rounded, size: 60, color: Color(0xFF1A3B5D)),
+                  const Center(child: AppLogo(size: 80)),
                   const SizedBox(height: 10),
                   
                   Center(

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:math' as math;
+import 'dart:ui'; // for PathMetric
+import '../widget/app_logo.dart';
 import 'login.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -9,42 +12,60 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
+class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
   late AnimationController _controller;
+  late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _logoDrawAnimation;
 
   @override
   void initState() {
     super.initState();
+    
+    // Logo Drawing Animation
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2), // Slightly longer for elegance
+      duration: const Duration(seconds: 3),
+    );
+    
+    _logoDrawAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+
+    // Fade & Slide for Text/Buttons
+    _fadeController = AnimationController(
+       vsync: this,
+       duration: const Duration(seconds: 1),
     );
 
     _fadeAnimation = CurvedAnimation(
-      parent: _controller,
+      parent: _fadeController,
       curve: Curves.easeIn,
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5), // Start slightly lower
+      begin: const Offset(0, 0.5),
       end: Offset.zero,
     ).animate(CurvedAnimation(
-      parent: _controller,
+      parent: _fadeController,
       curve: Curves.easeOutCubic,
     ));
 
-    _controller.forward();
+    // Sequence: Draw Logo -> Fade in Text
+    _controller.forward().then((_) {
+       _fadeController.forward();
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,7 +75,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFE0F7FA), // Light Cyan/White mix
+              Color(0xFFE0F7FA), // Light Cyan
               Color(0xFF88D3CE), // Teal-ish
               Color(0xFF3F6D9F), // Brand Blue
             ],
@@ -67,40 +88,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(),
-                  // Hero Icon
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: ScaleTransition(
-                      scale: _fadeAnimation,
-                      child: Container(
-                        height: 120, // Slightly larger
-                        width: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.white, // Clean white background for the logo
-                          borderRadius: BorderRadius.circular(24), // Modern app icon curve
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.hardEdge, // Ensure logo respects rounded corners
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0), // Breathing room
-                          child: Image.asset(
-                            'assets/app_icon.png',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  // Title and Tagline
-                  SlideTransition(
+                   const Spacer(),
+                   // Animated Logo
+                   AnimatedBuilder(
+                     animation: _logoDrawAnimation,
+                     builder: (context, child) {
+                       return AppLogo(
+                         size: 150,
+                         progress: _logoDrawAnimation.value,
+                       );
+                     },
+                   ),
+                   const SizedBox(height: 40),
+                   
+                   // Title and Tagline
+                   SlideTransition(
                     position: _slideAnimation,
                     child: FadeTransition(
                       opacity: _fadeAnimation,
@@ -108,7 +110,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                         children: [
                           Text(
                             'CollabQuest',
-                            style: GoogleFonts.outfit( // Switched to Outfit for a modern look if available, or fallback
+                            style: GoogleFonts.outfit( 
                               fontSize: 40,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF1A3B5D),
@@ -130,6 +132,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     ),
                   ),
                   const Spacer(),
+                  
                   // Action Button
                   SlideTransition(
                     position: _slideAnimation,
@@ -143,7 +146,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A3B5D), // Darker professional blue
+                          backgroundColor: const Color(0xFF1A3B5D),
                           foregroundColor: Colors.white,
                           elevation: 8,
                           shadowColor: Colors.black.withOpacity(0.3),
@@ -172,4 +175,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
     );
   }
 }
+
+
 
