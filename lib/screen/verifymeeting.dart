@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // ADDED THIS
+import 'package:firebase_auth/firebase_auth.dart';
 
 class VerifyPresenceScreen extends StatefulWidget {
   final String meetingId;
   final String projectId;
-  final String hostName; // This comes from 'hostDeviceName' in Firestore
+  final String hostName;
 
   const VerifyPresenceScreen({
     super.key,
@@ -25,16 +25,14 @@ class _VerifyPresenceScreenState extends State<VerifyPresenceScreen> {
   String _status = "Ready to scan";
 
   Future<void> _scanForHost() async {
-    // 1. Request permissions
     await [
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
       Permission.location,
     ].request();
 
-    // Check if Bluetooth is actually ON before starting
     if (await FlutterBluePlus.adapterState.first != BluetoothAdapterState.on) {
-      setState(() => _status = "Bluetooth is OFF. Turn it on!");
+      setState(() => _status = "Bluetooth is OFF!");
       return;
     }
 
@@ -48,9 +46,10 @@ class _VerifyPresenceScreenState extends State<VerifyPresenceScreen> {
 
       FlutterBluePlus.scanResults.listen((results) {
         for (ScanResult r in results) {
-          // Match the name saved by CreateMeetingScreen
-          if (r.device.platformName == widget.hostName ||
-              r.advertisementData.advName == widget.hostName) {
+          // FIX: Use advName for iOS reliability
+          String foundName = r.advertisementData.advName;
+
+          if (foundName == widget.hostName && foundName.isNotEmpty) {
             FlutterBluePlus.stopScan();
             _confirmPresence();
             break;
@@ -64,30 +63,26 @@ class _VerifyPresenceScreenState extends State<VerifyPresenceScreen> {
 
   void _confirmPresence() async {
     final userEmail = FirebaseAuth.instance.currentUser?.email;
-
     try {
-      // CHANGED: Saved to 'attendees' to match your Rules and ProjectDetailScreen
       await FirebaseFirestore.instance
           .collection('projects')
           .doc(widget.projectId)
           .collection('meetings')
           .doc(widget.meetingId)
           .collection('attendees')
-          .doc(userEmail) // Use email as doc ID to prevent duplicates
+          .doc(userEmail)
           .set({
             'timestamp': FieldValue.serverTimestamp(),
             'status': 'Present',
             'email': userEmail,
           });
 
-      if (mounted) {
+      if (mounted)
         setState(() {
           _isScanning = false;
           _status = "Verified!";
         });
-      }
     } catch (e) {
-      print("FIRESTORE ERROR: $e");
       setState(() => _status = "Firestore Error: $e");
     }
   }
