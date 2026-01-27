@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  String _selectedFilter = 'All'; // Filter state: 'All', 'Leader', 'Member'
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color primaryBlue = const Color(0xFF1A3B5D);
   final Color accentBlue = const Color(0xFF3F6D9F);
@@ -202,6 +203,37 @@ class _HomeScreenState extends State<HomeScreen> {
               color: primaryBlue,
             ),
           ),
+          const SizedBox(height: 10),
+          // Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ["All", "Leader", "Member"].map((filter) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(filter),
+                    selected: _selectedFilter == filter,
+                    onSelected: (bool selected) {
+                      if (selected) setState(() => _selectedFilter = filter);
+                    },
+                    selectedColor: primaryBlue,
+                    labelStyle: GoogleFonts.inter(
+                      color: _selectedFilter == filter ? Colors.white : primaryBlue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(color: primaryBlue.withOpacity(0.2)),
+                    ),
+                    showCheckmark: false,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
           const SizedBox(height: 15),
 
           // --- ALL PROJECTS LIST ---
@@ -227,11 +259,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   return _buildEmptyState();
                 }
 
+                // Client-side Filtering
+                final allDocs = snapshot.data!.docs;
+                final filteredDocs = allDocs.where((doc) {
+                  if (_selectedFilter == 'All') return true;
+                  
+                  final data = doc.data() as Map<String, dynamic>;
+                  final ownerEmail = data['ownerEmail']; // Ensure this field exists in your DB
+                  final isOwner = ownerEmail == user.email;
+                  
+                  if (_selectedFilter == 'Leader') return isOwner;
+                  if (_selectedFilter == 'Member') return !isOwner; // Member but not leader
+                  return true;
+                }).toList();
+
+                if (filteredDocs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      "No $_selectedFilter projects found",
+                      style: GoogleFonts.inter(color: Colors.grey),
+                    ),
+                  );
+                }
+
                 return ListView.builder(
                   padding: const EdgeInsets.only(bottom: 120),
-                  itemCount: snapshot.data!.docs.length,
+                  itemCount: filteredDocs.length,
                   itemBuilder: (context, index) {
-                    final doc = snapshot.data!.docs[index];
+                    final doc = filteredDocs[index];
                     final project = doc.data() as Map<String, dynamic>;
 
                     return GestureDetector(
