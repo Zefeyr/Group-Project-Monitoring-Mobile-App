@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'project.dart';
 import 'createproject.dart';
-import 'profile.dart'; 
+import 'profile.dart';
 import 'task.dart';
 import 'chat.dart';
 import 'notifications.dart';
@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  String _selectedFilter = 'All'; // Filter state: 'All', 'Leader', 'Member'
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color primaryBlue = const Color(0xFF1A3B5D);
   final Color accentBlue = const Color(0xFF3F6D9F);
@@ -36,12 +37,11 @@ class _HomeScreenState extends State<HomeScreen> {
       key: _scaffoldKey,
       extendBody: true,
       backgroundColor: const Color(0xFFF8F9FA),
-      // drawer removed
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: _buildNotificationIcon(), // Notification Icon triggers Drawer
+        leading: _buildNotificationIcon(),
         centerTitle: true,
         title: Text(
           'CollabQuest',
@@ -78,13 +78,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- NOTIFICATION WIDGETS ---
-
   Widget _buildNotificationIcon() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return IconButton(
-        icon: Icon(Icons.notifications_none_rounded, color: accentBlue, size: 28),
+        icon: Icon(
+          Icons.notifications_none_rounded,
+          color: accentBlue,
+          size: 28,
+        ),
         onPressed: () {},
       );
     }
@@ -106,7 +108,11 @@ class _HomeScreenState extends State<HomeScreen> {
           alignment: Alignment.center,
           children: [
             IconButton(
-              icon: Icon(Icons.notifications_none_rounded, color: accentBlue, size: 28),
+              icon: Icon(
+                Icons.notifications_none_rounded,
+                color: accentBlue,
+                size: 28,
+              ),
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
@@ -141,124 +147,186 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 10),
-
-          // --- CLOSEST DEADLINE REMINDER ---
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('projects')
-                .where('members', arrayContains: user.email)
-                .where(
-                  'deadline',
-                  isGreaterThan: Timestamp.now(),
-                ) // Only upcoming
-                .orderBy('deadline', descending: false) // Closest first
-                .limit(1)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                // Silently handle errors on logout
-                return _buildFinalReminder("No upcoming deadlines", "All caught up!");
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return _buildFinalReminder(
-                  "No upcoming deadlines",
-                  "All caught up!",
-                );
-              }
-
-              final data =
-                  snapshot.data!.docs.first.data() as Map<String, dynamic>;
-              String projectName = data['name'] ?? "N/A";
-              String timeDisplay = "TBD";
-
-              if (data['deadline'] != null) {
-                Timestamp ts = data['deadline'];
-                DateTime deadlineDate = ts.toDate();
-                int diff = deadlineDate.difference(DateTime.now()).inDays;
-
-                if (diff == 0) {
-                  timeDisplay = "DUE TODAY";
-                } else if (diff == 1) {
-                  timeDisplay = "DUE TOMORROW";
-                } else {
-                  timeDisplay = "$diff DAYS REMAINING";
-                }
-              }
-
-              return _buildFinalReminder(timeDisplay, projectName);
-            },
-          ),
-
-          const SizedBox(height: 50),
-          Text(
-            'Ongoing Projects',
-            style: GoogleFonts.outfit(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: primaryBlue,
-            ),
-          ),
-          const SizedBox(height: 15),
-
-          // --- ALL PROJECTS LIST ---
-          Expanded(
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // 1. Deadline Reminder
+          SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('projects')
                   .where('members', arrayContains: user.email)
-                  .orderBy('createdAt', descending: true)
+                  .where('deadline', isGreaterThan: Timestamp.now())
+                  .orderBy('deadline', descending: false)
+                  .limit(1)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  // Suppress permission denied error during logout
-                  if (snapshot.error.toString().contains("permission-denied")) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildFinalReminder(
+                    "No upcoming deadlines",
+                    "All caught up!",
+                  );
                 }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 120),
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    final doc = snapshot.data!.docs[index];
-                    final project = doc.data() as Map<String, dynamic>;
-
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProjectDetailScreen(
-                              projectId: doc.id,
-                              projectName: project['name'] ?? 'Untitled Group',
-                            ),
-                          ),
-                        );
-                      },
-                      child: _buildProjectCard(
-                        project['name'] ?? 'Untitled Group',
-                        project['subject'] ?? 'General',
-                      ),
-                    );
-                  },
+                final data =
+                    snapshot.data!.docs.first.data() as Map<String, dynamic>;
+                return _buildFinalReminder(
+                  _calculateTimeLeft(data['deadline']),
+                  data['name'] ?? "N/A",
                 );
               },
             ),
           ),
+
+          // 2. Ongoing Projects Title & Filter
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 40),
+                Text(
+                  'Ongoing Projects',
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: primaryBlue,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildFilterChips(),
+                const SizedBox(height: 15),
+              ],
+            ),
+          ),
+
+          // 3. Ongoing Projects List
+          _buildProjectSection(user.email!, isCompleted: false),
+
+          // 4. Completed Projects Title (REMOVED LOGO & CHANGED TEXT)
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 40),
+                Text(
+                  'Completed Projects',
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade900,
+                  ),
+                ),
+                Text(
+                  'Successfully reviewed and completed',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 15),
+              ],
+            ),
+          ),
+
+          // 5. Completed Projects List
+          _buildProjectSection(user.email!, isCompleted: true),
+
+          const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
     );
+  }
+
+  Widget _buildProjectSection(String userEmail, {required bool isCompleted}) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('projects')
+          .where('members', arrayContains: userEmail)
+          .where('status', isEqualTo: isCompleted ? 'Completed' : 'Active')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData)
+          return const SliverToBoxAdapter(child: SizedBox());
+
+        final docs = snapshot.data!.docs.where((doc) {
+          if (_selectedFilter == 'All') return true;
+          final isOwner = doc['ownerEmail'] == userEmail;
+          return _selectedFilter == 'Leader' ? isOwner : !isOwner;
+        }).toList();
+
+        if (docs.isEmpty) {
+          return SliverToBoxAdapter(
+            child: isCompleted
+                ? const SizedBox() // Hide the "Past" section if empty
+                : _buildEmptyState(),
+          );
+        }
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final project = docs[index].data() as Map<String, dynamic>;
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProjectDetailScreen(
+                      projectId: docs[index].id,
+                      projectName: project['name'] ?? 'Untitled',
+                    ),
+                  ),
+                );
+              },
+              child: _buildProjectCard(
+                project['name'] ?? 'Untitled',
+                project['subject'] ?? 'General',
+                isCompleted,
+              ),
+            );
+          }, childCount: docs.length),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: ["All", "Leader", "Member"].map((filter) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(filter),
+              selected: _selectedFilter == filter,
+              onSelected: (bool selected) {
+                if (selected) setState(() => _selectedFilter = filter);
+              },
+              selectedColor: primaryBlue,
+              labelStyle: GoogleFonts.inter(
+                color: _selectedFilter == filter ? Colors.white : primaryBlue,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: primaryBlue.withOpacity(0.2)),
+              ),
+              showCheckmark: false,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _calculateTimeLeft(Timestamp? ts) {
+    if (ts == null) return "TBD";
+    DateTime deadlineDate = ts.toDate();
+    int diff = deadlineDate.difference(DateTime.now()).inDays;
+    if (diff == 0) return "DUE TODAY";
+    if (diff == 1) return "DUE TOMORROW";
+    return "$diff DAYS REMAINING";
   }
 
   Widget _buildFinalReminder(String deadlineText, String projectName) {
@@ -330,14 +398,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProjectCard(String title, String subject) {
+  Widget _buildProjectCard(String title, String subject, bool isCompleted) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color.fromARGB(255, 229, 229, 229)),
+        border: Border.all(
+          color: isCompleted
+              ? Colors.orange.shade100
+              : const Color.fromARGB(255, 229, 229, 229),
+        ),
       ),
       child: Row(
         children: [
@@ -345,10 +417,18 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 45,
             width: 45,
             decoration: BoxDecoration(
-              color: primaryBlue.withOpacity(0.1),
+              color: (isCompleted ? Colors.orange : primaryBlue).withOpacity(
+                0.1,
+              ),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.groups_rounded, color: primaryBlue, size: 20),
+            child: Icon(
+              isCompleted
+                  ? Icons.workspace_premium_rounded
+                  : Icons.groups_rounded,
+              color: isCompleted ? Colors.orange.shade800 : primaryBlue,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -373,6 +453,22 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+          if (isCompleted)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                "DONE",
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade900,
+                ),
+              ),
+            ),
           const Icon(
             Icons.arrow_forward_ios_rounded,
             color: Colors.grey,
@@ -388,6 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(height: 40),
           Icon(
             Icons.group_off_rounded,
             size: 70,
@@ -395,14 +492,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No current project',
+            'No current projects',
             style: GoogleFonts.inter(
               fontSize: 16,
               color: Colors.grey.shade500,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 100),
         ],
       ),
     );
@@ -412,7 +508,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
         decoration: BoxDecoration(
           color: primaryBlue,
           borderRadius: BorderRadius.circular(30),
@@ -425,12 +520,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildNavItem(Icons.grid_view_rounded, "Home", 0),
             _buildNavItem(Icons.assignment_rounded, "Tasks", 1),
             _buildNavItem(Icons.chat_bubble_rounded, "Chat", 2),
-            _buildNavItem(Icons.person_rounded, "Profile", 3), // Updated to index 3
+            _buildNavItem(Icons.person_rounded, "Profile", 3),
           ],
         ),
       ),
@@ -439,108 +533,101 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     bool isSelected = _currentIndex == index;
-    
-    // Custom Icon for Chat (Index 2) to support Badge
-    Widget iconWidget;
-    if (index == 2) {
-      iconWidget = _buildChatIconWithBadge(icon, isSelected);
-    } else {
-      iconWidget = Icon(
-        icon,
-        color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-        size: 24,
-      );
-    }
+    Widget iconWidget = index == 2
+        ? _buildChatIconWithBadge(icon, isSelected)
+        : Icon(
+            icon,
+            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+            size: 30,
+          );
 
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          iconWidget,
-          if (isSelected)
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-        ],
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            border: index != 3
+                ? Border(
+                    right: BorderSide(
+                      color: Colors.white.withOpacity(0.05),
+                      width: 1,
+                    ),
+                  )
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              iconWidget,
+              if (isSelected)
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildChatIconWithBadge(IconData icon, bool isSelected) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    if (user == null)
       return Icon(
         icon,
         color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-        size: 24,
+        size: 30,
       );
-    }
 
     return StreamBuilder<QuerySnapshot>(
-      // Listen to Projects
       stream: FirebaseFirestore.instance
           .collection('projects')
           .where('members', arrayContains: user.email)
           .snapshots(),
       builder: (context, projectSnap) {
-        if (!projectSnap.hasData) {
-           return Icon(
+        if (!projectSnap.hasData)
+          return Icon(
             icon,
             color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-            size: 24,
+            size: 30,
           );
-        }
-        
         return StreamBuilder<QuerySnapshot>(
-          // Listen to User Meta
           stream: FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
               .collection('chatMeta')
               .snapshots(),
           builder: (context, metaSnap) {
-            if (metaSnap.hasError) {
-               // Ignore error, show icon without badge
-               return Icon(
-                icon,
-                color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-                size: 24,
-              );
-            }
-
             int totalUnread = 0;
             if (metaSnap.hasData) {
-              // Map Meta
-              Map<String, int> lastSeenMap = {};
-              for (var doc in metaSnap.data!.docs) {
-                 lastSeenMap[doc.id] = (doc.data() as Map<String, dynamic>)['lastSeenCount'] ?? 0;
-              }
-
-              // Calc Total
+              Map<String, int> lastSeenMap = {
+                for (var d in metaSnap.data!.docs)
+                  d.id:
+                      (d.data() as Map<String, dynamic>)['lastSeenCount'] ?? 0,
+              };
               for (var pDoc in projectSnap.data!.docs) {
-                final pData = pDoc.data() as Map<String, dynamic>;
-                final int msgCount = pData['msgCount'] ?? 0;
-                final int lastSeen = lastSeenMap[pDoc.id] ?? 0;
-                if (msgCount > lastSeen) {
-                  totalUnread += (msgCount - lastSeen);
-                }
+                final int msgCount =
+                    (pDoc.data() as Map<String, dynamic>)['msgCount'] ?? 0;
+                if (msgCount > (lastSeenMap[pDoc.id] ?? 0))
+                  totalUnread += (msgCount - (lastSeenMap[pDoc.id] ?? 0));
               }
             }
-
             return Stack(
               clipBehavior: Clip.none,
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
-                  size: 24,
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.5),
+                  size: 30,
                 ),
                 if (totalUnread > 0)
                   Positioned(

@@ -4,10 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/services.dart'; // Required for Clipboard.setData
+import 'package:flutter/services.dart';
 import 'createtask.dart';
 import 'createmeeting.dart';
 import 'verifymeeting.dart';
+import 'review.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final String projectId;
@@ -51,10 +52,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     super.dispose();
   }
 
-  // --- FIXED: USES THE inviteCode FIELD FROM YOUR DATABASE ---
   void _showProjectCode(String? code) {
     final String displayCode = code ?? "N/A";
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -138,22 +137,30 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           );
 
         var data = snapshot.data!.data() as Map<String, dynamic>;
-        final currentUserEmail = FirebaseAuth.instance.currentUser?.email;
-        final String ownerEmail = data['ownerEmail'] ?? '';
+
+        final currentUserEmail = FirebaseAuth.instance.currentUser?.email
+            ?.trim()
+            .toLowerCase();
+        final String ownerEmail = (data['ownerEmail'] ?? '')
+            .toString()
+            .trim()
+            .toLowerCase();
         final bool isOwner = ownerEmail == currentUserEmail;
+
         final String inviteCode = data['inviteCode'] ?? "------";
+        final String projectStatus = data['status'] ?? "Active";
+
+        // Logic: Once Completed, the project is locked for edits.
+        final bool isLocked = projectStatus == "Completed";
+        final bool isFullyCompleted = projectStatus == "Completed";
 
         if (!_isEditingSummary) {
           _summaryController.text = data['description'] ?? "";
           _subjectController.text = data['subject'] ?? "General";
-          _statusController.text = data['status'] ?? "In Progress";
+          _statusController.text = projectStatus;
         }
 
         List<String> members = List<String>.from(data['members'] ?? []);
-        if (currentUserEmail != null && members.contains(currentUserEmail)) {
-          members.remove(currentUserEmail);
-          members.insert(0, currentUserEmail);
-        }
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
@@ -167,10 +174,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             foregroundColor: primaryBlue,
             elevation: 0,
             actions: [
-              IconButton(
-                icon: const Icon(Icons.share_rounded),
-                onPressed: () => _showProjectCode(inviteCode),
-              ),
+              if (!isLocked)
+                IconButton(
+                  icon: const Icon(Icons.share_rounded),
+                  onPressed: () => _showProjectCode(inviteCode),
+                ),
               const SizedBox(width: 8),
             ],
           ),
@@ -179,11 +187,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (isFullyCompleted) _buildCompletionBanner(),
                 _buildUserSpecificHeader(
                   widget.projectId,
                   currentUserEmail,
                   isOwner,
                   members,
+                  isLocked,
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -201,10 +211,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
                 _buildMemberSlider(members, currentUserEmail, ownerEmail),
                 const SizedBox(height: 30),
-                _buildExpandableDetails(data, isOwner, members),
+                _buildExpandableDetails(data, isOwner, members, isLocked),
                 const SizedBox(height: 20),
-                _buildBluetoothMeetingCard(isOwner, currentUserEmail),
-                const SizedBox(height: 50),
+                _buildBluetoothMeetingCard(isOwner, currentUserEmail, isLocked),
+                const SizedBox(height: 20),
+                _buildActionButtons(
+                  isOwner,
+                  projectStatus,
+                  members,
+                  data['name'],
+                  currentUserEmail,
+                ),
+                const SizedBox(height: 60),
               ],
             ),
           ),
@@ -213,9 +231,316 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
-  // --- Bluetooth & UI Helper Methods Below ---
+  Widget _buildCompletionBanner() {
+    return Container(
+      width: double.infinity,
+      color: Colors.green.shade100,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            size: 16,
+            color: Colors.green.shade900,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            "Project Completed - History Active",
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.green.shade900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  Widget _buildBluetoothMeetingCard(bool isOwner, String? currentUserEmail) {
+  Widget _buildActionButtons(
+    bool isOwner,
+    String status,
+    List<String> members,
+    String? projectName,
+    String? currentUserEmail,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          // Owner sees "Complete" only when Active
+          if (isOwner && status == "Active")
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                icon: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  "COMPLETE PROJECT",
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade600,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onPressed: () =>
+                    _showCompletionDialog(context, members, projectName),
+              ),
+            ),
+
+          // Everyone sees "Review" once status is "Completed"
+          if (status == "Completed")
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('projects')
+                  .doc(widget.projectId)
+                  .collection('reviews')
+                  .where('reviewerEmail', isEqualTo: currentUserEmail)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                bool hasReviewed =
+                    snapshot.hasData && snapshot.data!.docs.isNotEmpty;
+                return SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton.icon(
+                    icon: Icon(
+                      hasReviewed ? Icons.done_all : Icons.rate_review_rounded,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      hasReviewed ? "REVIEW SUBMITTED" : "REVIEW TEAM MEMBERS",
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: hasReviewed
+                          ? Colors.grey
+                          : Colors.orange.shade800,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    onPressed: hasReviewed
+                        ? null
+                        : () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReviewMembersScreen(
+                                  projectId: widget.projectId,
+                                  members: members,
+                                  projectName: projectName ?? "Project",
+                                ),
+                              ),
+                            );
+                          },
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showCompletionDialog(
+    BuildContext context,
+    List<String> members,
+    String? name,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          "Complete Project?",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "This will move the project to History and allow all members to review the team.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () async {
+              Navigator.pop(context);
+              // UPDATE: Set status to Completed immediately so it shows in History page
+              await FirebaseFirestore.instance
+                  .collection('projects')
+                  .doc(widget.projectId)
+                  .update({'status': 'Completed'});
+              _showSnack("Project Completed!", Colors.green);
+            },
+            child: const Text("Confirm"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandableDetails(
+    Map<String, dynamic> data,
+    bool isOwner,
+    List<String> members,
+    bool isLocked,
+  ) {
+    Timestamp? timestamp = data['deadline'] as Timestamp?;
+    DateTime? deadlineDate = timestamp?.toDate();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.grey.shade100),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () =>
+                  setState(() => _isSummaryExpanded = !_isSummaryExpanded),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Project Overview",
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      color: primaryBlue,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _isSummaryExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.grey,
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 30),
+            _detailRow("Subject", data['subject'] ?? "General"),
+            _detailRow("Status", data['status'] ?? "In Progress"),
+            _detailRow(
+              "Due Date",
+              deadlineDate != null
+                  ? "${deadlineDate.day}/${deadlineDate.month}/${deadlineDate.year}"
+                  : "Not Set",
+            ),
+            if (_isSummaryExpanded) ...[
+              const SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Summary",
+                    style: GoogleFonts.inter(
+                      color: Colors.grey,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (isOwner && !isLocked)
+                    IconButton(
+                      icon: Icon(
+                        _isEditingSummary
+                            ? Icons.check_circle
+                            : Icons.edit_note,
+                        color: _isEditingSummary ? Colors.green : primaryBlue,
+                        size: 20,
+                      ),
+                      onPressed: () async {
+                        if (_isEditingSummary) {
+                          await FirebaseFirestore.instance
+                              .collection('projects')
+                              .doc(widget.projectId)
+                              .update({'description': _summaryController.text});
+                          setState(() => _isEditingSummary = false);
+                          _showSnack("Summary Saved!", Colors.green);
+                        } else {
+                          setState(() => _isEditingSummary = true);
+                        }
+                      },
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _isEditingSummary
+                  ? TextField(
+                      controller: _summaryController,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      data['description'] ?? "No summary provided.",
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: primaryBlue.withOpacity(0.8),
+                        height: 1.5,
+                      ),
+                    ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(color: Colors.grey, fontSize: 13),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              color: primaryBlue,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBluetoothMeetingCard(
+    bool isOwner,
+    String? currentUserEmail,
+    bool isLocked,
+  ) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('projects')
@@ -277,10 +602,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         ),
                         Text(
                           hasActiveMeeting
-                              ? (_isScanning
-                                    ? "Verifying signal..."
-                                    : "Nearby signal found")
-                              : "Attendance is currently offline",
+                              ? "Nearby signal found"
+                              : "Attendance is offline",
                           style: GoogleFonts.inter(
                             color: Colors.white54,
                             fontSize: 12,
@@ -291,50 +614,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                 ],
               ),
-              if (hasActiveMeeting) ...[
-                const SizedBox(height: 20),
-                const Divider(color: Colors.white10),
-                const SizedBox(height: 10),
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('projects')
-                      .doc(widget.projectId)
-                      .collection('meetings')
-                      .doc(meetingDoc!.id)
-                      .collection('attendees')
-                      .snapshots(),
-                  builder: (context, attendSnap) {
-                    int count = attendSnap.hasData
-                        ? attendSnap.data!.docs.length
-                        : 0;
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Joined Team",
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                        Text(
-                          "$count Members Present",
-                          style: GoogleFonts.inter(
-                            color: Colors.blueAccent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isScanning
+                  onPressed: isLocked
                       ? null
                       : () {
                           if (hasActiveMeeting) {
@@ -361,9 +645,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: hasActiveMeeting
-                        ? Colors.blueAccent
-                        : Colors.white,
+                    backgroundColor: isLocked
+                        ? Colors.grey
+                        : (hasActiveMeeting ? Colors.blueAccent : Colors.white),
                     foregroundColor: hasActiveMeeting
                         ? Colors.white
                         : Colors.black,
@@ -372,51 +656,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: _isScanning
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          hasActiveMeeting
+                  child: Text(
+                    isLocked
+                        ? "PROJECT LOCKED"
+                        : (hasActiveMeeting
                               ? "VERIFY PRESENCE"
                               : (isOwner
                                     ? "CREATE MEETING"
-                                    : "WAITING FOR LEAD"),
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                            letterSpacing: 1.1,
-                          ),
-                        ),
-                ),
-              ),
-              if (isOwner && hasActiveMeeting)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: TextButton(
-                    onPressed: () async {
-                      await FirebaseFirestore.instance
-                          .collection('projects')
-                          .doc(widget.projectId)
-                          .collection('meetings')
-                          .doc(meetingDoc!.id)
-                          .update({'status': 'Finished'});
-                    },
-                    child: Text(
-                      "END SESSION",
-                      style: GoogleFonts.inter(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
+                                    : "WAITING FOR LEAD")),
                   ),
                 ),
+              ),
             ],
           ),
         );
@@ -461,45 +711,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (isMe)
-                    Text(
-                      "You",
-                      style: GoogleFonts.inter(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : primaryBlue,
-                      ),
-                    )
-                  else
-                    FutureBuilder<QuerySnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('users')
-                          .where('email', isEqualTo: email.trim())
-                          .limit(1)
-                          .get(),
-                      builder: (context, snapshot) {
-                        String name = "";
-                        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                          var data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-                          name = data['name'] ?? "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}".trim();
-                        }
-                        
-                        if (name.isEmpty) {
-                           name = email.split('@')[0];
-                        }
-                        
-                        return Text(
-                          name,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : primaryBlue,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
+                  Text(
+                    isMe ? "You" : email.split('@')[0],
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : primaryBlue,
                     ),
+                  ),
                   Text(
                     isLead ? "Project Lead" : "Team Member",
                     style: GoogleFonts.inter(
@@ -566,282 +785,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
-  Widget _buildExpandableDetails(
-    Map<String, dynamic> data,
-    bool isOwner,
-    List<String> members,
-  ) {
-    Timestamp? timestamp = data['deadline'] as Timestamp?;
-    DateTime? deadlineDate = timestamp?.toDate();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: Colors.grey.shade100),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () =>
-                  setState(() => _isSummaryExpanded = !_isSummaryExpanded),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Project Overview",
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.bold,
-                      color: primaryBlue,
-                      fontSize: 16,
-                    ),
-                  ),
-                  if (isOwner && data['status'] != 'Completed')
-                     IconButton(
-                        icon: const Icon(Icons.check_circle_outline, color: Colors.green),
-                        tooltip: "Mark Project as Completed",
-                        onPressed: () => _showCompletionDialog(context, members, data['name']),
-                     ),
-                  const Spacer(),
-                  Icon(
-                    _isSummaryExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.grey,
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 30),
-            _detailRow("Subject", data['subject'] ?? "General"),
-            _detailRow("Status", data['status'] ?? "In Progress"),
-            _detailRow(
-              "Due Date",
-              deadlineDate != null
-                  ? "${deadlineDate.day}/${deadlineDate.month}/${deadlineDate.year}"
-                  : "Not Set",
-            ),
-            if (_isSummaryExpanded) ...[
-              const SizedBox(height: 15),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Summary",
-                    style: GoogleFonts.inter(
-                      color: Colors.grey,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (isOwner)
-                    IconButton(
-                      icon: Icon(
-                        _isEditingSummary
-                            ? Icons.check_circle
-                            : Icons.edit_note,
-                        color: _isEditingSummary ? Colors.green : primaryBlue,
-                        size: 20,
-                      ),
-                      onPressed: () async {
-                        if (_isEditingSummary) {
-                          await FirebaseFirestore.instance
-                              .collection('projects')
-                              .doc(widget.projectId)
-                              .update({'description': _summaryController.text});
-                          setState(() => _isEditingSummary = false);
-                          _showSnack("Summary Saved!", Colors.green);
-                        } else {
-                          setState(() => _isEditingSummary = true);
-                        }
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _isEditingSummary
-                  ? TextField(
-                      controller: _summaryController,
-                      maxLines: 5,
-                      style: GoogleFonts.inter(fontSize: 14),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    )
-                  : Text(
-                      data['description'] ?? "No summary provided.",
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: primaryBlue.withOpacity(0.8),
-                        height: 1.5,
-                      ),
-                    ),
-              const SizedBox(height: 20),
-              Text(
-                "Team Members",
-                style: GoogleFonts.inter(
-                  color: Colors.grey,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...members.map(
-                (rawEmail) {
-                  final email = rawEmail.trim();
-                  print("Fetching for email: '$email'"); // Debug print
-                  
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: FutureBuilder<QuerySnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('users')
-                          .where('email', isEqualTo: email)
-                          .limit(1)
-                          .get(),
-                    builder: (context, snapshot) {
-                      String displayName = "";
-                      if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                        print("Found user for $email: ${snapshot.data!.docs.length}"); // Debug
-                        var userData = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-                        displayName = userData['name'] ?? 
-                            "${userData['firstName'] ?? ''} ${userData['lastName'] ?? ''}".trim();
-                      } else {
-                         print("No user found for $email (snapshot has data: ${snapshot.hasData})");
-                      }
-                      
-                      // Fallback for legacy users: Extract name from email
-                      if (displayName.isEmpty) {
-                        displayName = email.split('@')[0];
-                      }
-                      
-                      return Row(
-                        children: [
-                          const Icon(
-                            Icons.person_outline,
-                            size: 14,
-                            color: Colors.blue,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "$email - $displayName",
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: primaryBlue,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                );
-                },
-              ).toList(),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showCompletionDialog(BuildContext context, List<String> members, String? name) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Complete Project?", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-         content: const Text("This will mark the project as finished and notify all team members. Iterate with caution!"),
-         actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              onPressed: () {
-                Navigator.pop(context);
-                _completeProject(members, name ?? "Project");
-              },
-              child: const Text("Confirm"),
-            )
-         ],
-      ),
-    );
-  }
-
-  Future<void> _completeProject(List<String> members, String name) async {
-    try {
-      // 1. Update Project Status
-      await FirebaseFirestore.instance
-          .collection('projects')
-          .doc(widget.projectId)
-          .update({'status': 'Completed'});
-      
-      // 2. Notify All Members
-      for (String email in members) {
-        final userQuery = await FirebaseFirestore.instance
-            .collection('users')
-            .where('email', isEqualTo: email)
-            .limit(1)
-            .get();
-
-        if (userQuery.docs.isNotEmpty) {
-           final uid = userQuery.docs.first.id;
-           await FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('notifications')
-              .add({
-                'title': 'Project Completed!',
-                'body': '$name has been marked as completed by the lead.',
-                'type': 'project',
-                'isRead': false,
-                'createdAt': FieldValue.serverTimestamp(),
-              });
-        }
-      }
-      _showSnack("Project Marked as Completed!", Colors.green);
-    } catch (e) {
-      _showSnack("Error: $e", Colors.red);
-    }
-  }
-
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.inter(color: Colors.grey, fontSize: 13),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-              color: primaryBlue,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildUserSpecificHeader(
     String projectId,
     String? userEmail,
     bool isOwner,
     List<String> members,
+    bool isLocked,
   ) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -872,8 +821,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   pendingTasks.first['taskName'],
                   isOwner,
                   members,
+                  isLocked,
                 )
-              : _buildNoTaskLargeContent(isOwner, members),
+              : _buildNoTaskLargeContent(isOwner, members, isLocked),
         );
       },
     );
@@ -883,6 +833,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     String taskName,
     bool isOwner,
     List<String> members,
+    bool isLocked,
   ) {
     return Row(
       children: [
@@ -911,7 +862,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             ],
           ),
         ),
-        if (isOwner)
+        if (isOwner && !isLocked)
           IconButton(
             onPressed: () => Navigator.push(
               context,
@@ -928,9 +879,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
-  Widget _buildNoTaskLargeContent(bool isOwner, List<String> members) {
+  Widget _buildNoTaskLargeContent(
+    bool isOwner,
+    List<String> members,
+    bool isLocked,
+  ) {
     return InkWell(
-      onTap: isOwner
+      onTap: (isOwner && !isLocked)
           ? () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -944,7 +899,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       child: Row(
         children: [
           Icon(
-            isOwner ? Icons.add_task_rounded : Icons.hourglass_empty_rounded,
+            isOwner
+                ? (isLocked ? Icons.task_alt : Icons.add_task_rounded)
+                : Icons.hourglass_empty_rounded,
             color: Colors.white,
             size: 28,
           ),
@@ -954,7 +911,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isOwner ? "ACTION REQUIRED" : "STATUS",
+                  isOwner ? "PROJECT STATUS" : "STATUS",
                   style: GoogleFonts.inter(
                     color: Colors.white70,
                     fontSize: 10,
@@ -962,7 +919,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                 ),
                 Text(
-                  isOwner ? "Tap to Assign First Task" : "Waiting for tasks...",
+                  isLocked
+                      ? "In Review / Finished"
+                      : (isOwner
+                            ? "Tap to Assign First Task"
+                            : "Waiting for tasks..."),
                   style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontSize: 18,
