@@ -34,6 +34,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildStatsSection(currentUser!.email),
             const SizedBox(height: 20),
 
+            _buildTabToggle(),
+            const SizedBox(height: 20),
+            _selectedTab == 0
+                ? _buildWorkHistoryList(currentUser!.email)
+                : _buildPeerReviewsList(currentUser!.email),
             // Tab Toggle for Work & Reviews
             _buildTabToggle(),
             const SizedBox(height: 20),
@@ -369,10 +374,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .where('assignedTo', isEqualTo: email)
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint("ProfileStats Error: ${snapshot.error}");
+          return _statCard(
+            "Error",
+            "!",
+            Icons.error_outline,
+            color: Colors.red,
+          );
+        }
+
         int totalTasks = 0;
         int completed = 0;
 
         if (snapshot.hasData) {
+          final docs = snapshot.data!.docs;
+          debugPrint("ProfileStats: Found ${docs.length} tasks for $email");
+          totalTasks = docs.length;
+          completed = docs.where((doc) {
+            final status = doc['status'] as String? ?? '';
+            return status.toLowerCase() == 'completed';
+          }).length;
+        } else {
+          debugPrint("ProfileStats: No data yet/Loading...");
           totalTasks = snapshot.data!.docs.length;
           completed = snapshot.data!.docs
               .where((doc) => (doc['status'] ?? '').toString().toLowerCase() == 'completed')
@@ -383,19 +407,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Row(
             children: [
+              Expanded(
+                child: _statCard(
+                  "Tasks",
+                  "$totalTasks",
+                  Icons.assignment_outlined,
+                ),
               _statCard(
                 "Tasks",
                 "$totalTasks",
                 Icons.assignment_outlined,
               ),
               const SizedBox(width: 12),
-              _statCard(
-                "Completed",
-                "$completed",
-                Icons.check_circle_outline,
-                color: Colors.green,
+              Expanded(
+                child: _statCard(
+                  "Completed",
+                  "$completed",
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                ),
               ),
               const SizedBox(width: 12),
+              // Placeholder for future attendance calculation
+              Expanded(
+                child: _statCard(
+                  "Attendance",
+                  "95%",
+                  Icons.access_time_rounded,
+                  color: Colors.orange,
+                ),
               _statCard(
                 "Attendance",
                 "95%",
@@ -415,39 +455,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     IconData icon, {
     Color color = const Color(0xFF1A3B5D),
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: GoogleFonts.outfit(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: primaryBlue,
-              ),
-            ),
-            Text(
-              label,
-              style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
-            ),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: primaryBlue,
+            ),
     );
   }
 
@@ -488,7 +519,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: isActive ? Colors.white : Colors.grey,
             fontSize: 13,
           ),
-        ),
+          Text(
+            label,
+            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
@@ -594,31 +629,119 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPeerReviewsList(String uid) {
+  Widget _buildTabToggle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _tabButton("Work History", 0)),
+          Expanded(child: _tabButton("Peer Reviews", 1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabButton(String label, int index) {
+    bool isActive = _selectedTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive ? primaryBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            color: isActive ? Colors.white : Colors.grey,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeerReviewsList(String? email) {
+    if (email == null) return const SizedBox();
+
     return StreamBuilder<QuerySnapshot>(
+      // Uses collectionGroup query for reviews assigned to this user
       // Using known correct path: users/{uid}/reviews
       stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('reviews')
-          .orderBy('createdAt', descending: true)
+          .collectionGroup('reviews_data')
+          .where('targetUser', isEqualTo: email)
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint("PeerReview Error: ${snapshot.error}");
+          return _emptyState("Could not load reviews.");
+        }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _emptyState("No peer reviews received yet.");
         }
 
-        return SizedBox(
-          height: 160,
-          child: ListView.builder(
-            padding: const EdgeInsets.only(left: 24),
-            scrollDirection: Axis.horizontal,
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              var data =
-                  snapshot.data!.docs[index].data() as Map<String, dynamic>;
-              double rating = (data['rating'] ?? 0).toDouble();
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          itemCount: snapshot.data!.docs.length,
+          separatorBuilder: (c, i) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            var data =
+                snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            double rating = (data['rating'] ?? 0).toDouble();
+            String projectName = data['projectName'] ?? "Unknown Project";
+            String comment = data['comment'] ?? "No comment";
 
+            return Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3F6D9F), Color(0xFF1A3B5D)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryBlue.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        projectName,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Row(
+                        children: List.generate(5, (i) {
+                          return Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: i < rating ? Colors.amber : Colors.white24,
+                          );
+                        }),
               return Container(
                 width: 200,
                 margin: const EdgeInsets.only(right: 16),
@@ -676,7 +799,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "\"$comment\"",
+                    style: GoogleFonts.inter(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.verified_user_outlined,
+                        color: Colors.white54,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Verified Teammate",
+                        style: GoogleFonts.inter(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
                   ],
                 ),
               );

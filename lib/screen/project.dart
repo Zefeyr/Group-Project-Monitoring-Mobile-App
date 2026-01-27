@@ -215,6 +215,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 const SizedBox(height: 20),
                 _buildBluetoothMeetingCard(isOwner, currentUserEmail, isLocked),
                 const SizedBox(height: 20),
+                const SizedBox(height: 20),
+                _buildBluetoothMeetingCard(isOwner, currentUserEmail, isLocked),
+                const SizedBox(height: 20),
                 _buildActionButtons(
                   isOwner,
                   projectStatus,
@@ -297,6 +300,105 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     _showCompletionDialog(context, members, projectName),
               ),
             ),
+
+          // Everyone sees "Review" once status is "Completed"
+          if (status == "Completed")
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('projects')
+                  .doc(widget.projectId)
+                  .collection('reviews')
+                  .where('reviewerEmail', isEqualTo: currentUserEmail)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                bool hasReviewed =
+                    snapshot.hasData && snapshot.data!.docs.isNotEmpty;
+                return SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton.icon(
+                    icon: Icon(
+                      hasReviewed ? Icons.done_all : Icons.rate_review_rounded,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      hasReviewed ? "REVIEW SUBMITTED" : "REVIEW TEAM MEMBERS",
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: hasReviewed
+                          ? Colors.grey
+                          : Colors.orange.shade800,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    onPressed: hasReviewed
+                        ? null
+                        : () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ReviewMembersScreen(
+                                  projectId: widget.projectId,
+                                  members: members,
+                                  projectName: projectName ?? "Project",
+                                ),
+                              ),
+                            );
+                          },
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showCompletionDialog(
+    BuildContext context,
+    List<String> members,
+    String? name,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          "Complete Project?",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "This will move the project to History and allow all members to review the team.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () async {
+              Navigator.pop(context);
+              // UPDATE: Set status to Completed immediately so it shows in History page
+              await FirebaseFirestore.instance
+                  .collection('projects')
+                  .doc(widget.projectId)
+                  .update({'status': 'Completed'});
+              _showSnack("Project Completed!", Colors.green);
+            },
+            child: const Text("Confirm"),
+          ),
+        ],
+      ),
+    );
+  }
+
 
           // Everyone sees "Review" once status is "Completed"
           if (status == "Completed")
@@ -711,6 +813,39 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .where('email', isEqualTo: email.trim())
+                        .limit(1)
+                        .get(),
+                    builder: (context, snapshot) {
+                      String name = "";
+                      if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                        var data =
+                            snapshot.data!.docs.first.data()
+                                as Map<String, dynamic>;
+                        name =
+                            data['name'] ??
+                            "${data['firstName'] ?? ''} ${data['lastName'] ?? ''}"
+                                .trim();
+                      }
+
+                      if (name.isEmpty) {
+                        name = email.split('@')[0];
+                      }
+
+                      return Text(
+                        isMe ? "You" : name,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.white : primaryBlue,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      );
+                    },
                   Text(
                     isMe ? "You" : email.split('@')[0],
                     style: GoogleFonts.inter(

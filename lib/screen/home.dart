@@ -248,6 +248,8 @@ class _HomeScreenState extends State<HomeScreen> {
           return const SliverToBoxAdapter(child: SizedBox());
 
         final docs = snapshot.data!.docs.where((doc) {
+          if (_selectedFilter == 'All') return true;
+          final isOwner = doc['ownerEmail'] == userEmail;
           final data = doc.data() as Map<String, dynamic>;
           
           // NEW: If viewing Completed list, hide projects the user has already reviewed

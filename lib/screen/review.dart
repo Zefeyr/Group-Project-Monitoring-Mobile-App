@@ -183,6 +183,7 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
         batch.set(reviewRef, {
           'reviewer': currentUserEmail,
           'targetUser': email,
+          'projectName': widget.projectName,
           'rating': _ratings[email],
           'comment': _controllers[email]?.text,
           'timestamp': FieldValue.serverTimestamp(),
@@ -202,6 +203,10 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
+      await batch.commit();
+
+      // 3. LOGICAL GATE: Check if the project is fully complete
+      await _checkAndCompleteProject();
       // 3. NEW: Add user to 'reviewedBy' array in the MAIN project doc
       // This allows efficient filtering in queries (e.g. Chat Screen)
       final projectRef =
@@ -217,12 +222,35 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
+            content: Text("Reviews submitted!"),
             content: Text("Reviews submitted! Project moved to History."),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _checkAndCompleteProject() async {
+    final reviewsSnap = await FirebaseFirestore.instance
+        .collection('projects')
+        .doc(widget.projectId)
+        .collection('reviews')
+        .get();
+
+    // If total reviews submitted matches total member count, move to History
+    if (reviewsSnap.docs.length >= widget.members.length) {
+      await FirebaseFirestore.instance
+          .collection('projects')
+          .doc(widget.projectId)
+          .update({'status': 'Completed'});
+    }
+  }
+}
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
