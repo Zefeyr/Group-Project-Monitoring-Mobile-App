@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'project.dart';
 import 'createproject.dart';
+import 'profile.dart'; // Import Profile Screen
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _buildHomeDashboard(),
       const Center(child: Text('Task List')),
       const Center(child: Text('Chat Room')),
-      const Center(child: Text('User Profile')),
+      const ProfileScreen(), // Use ProfileScreen here
     ];
 
     return Scaffold(
@@ -373,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildNavItem(Icons.grid_view_rounded, "Home", 0),
             _buildNavItem(Icons.assignment_rounded, "Tasks", 1),
             _buildNavItem(Icons.chat_bubble_rounded, "Chat", 2),
-            _buildNavItem(Icons.person_rounded, "Profile", 3),
+            _buildNavItem(Icons.person_rounded, "Profile", 3), // Updated to index 3
           ],
         ),
       ),
