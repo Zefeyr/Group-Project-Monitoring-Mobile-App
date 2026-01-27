@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'project.dart';
 import 'createproject.dart';
 import 'profile.dart'; // Import Profile Screen
+import 'task.dart';
+import 'chat.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
       const Center(child: Text('Task List')),
       const Center(child: Text('Chat Room')),
       const ProfileScreen(), // Use ProfileScreen here
+      const TaskScreen(),
+      const ChatScreen(),
+      const Center(child: Text('User Profile')),
     ];
 
     return Scaffold(
