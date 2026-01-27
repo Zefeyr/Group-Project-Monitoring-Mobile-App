@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'project.dart';
 import 'createproject.dart';
+import 'profile.dart'; // Import Profile Screen
 import 'task.dart';
 import 'chat.dart';
 
@@ -23,6 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       _buildHomeDashboard(),
+      const Center(child: Text('Task List')),
+      const Center(child: Text('Chat Room')),
+      const ProfileScreen(), // Use ProfileScreen here
       const TaskScreen(),
       const ChatScreen(),
       const Center(child: Text('User Profile')),
@@ -375,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildNavItem(Icons.grid_view_rounded, "Home", 0),
             _buildNavItem(Icons.assignment_rounded, "Tasks", 1),
             _buildNavItem(Icons.chat_bubble_rounded, "Chat", 2),
-            _buildNavItem(Icons.person_rounded, "Profile", 3),
+            _buildNavItem(Icons.person_rounded, "Profile", 3), // Updated to index 3
           ],
         ),
       ),
