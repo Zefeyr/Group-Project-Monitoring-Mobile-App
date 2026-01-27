@@ -15,6 +15,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final Color primaryBlue = const Color(0xFF1A3B5D);
   final User? currentUser = FirebaseAuth.instance.currentUser;
+  int _selectedTab = 0; // 0: Work History, 1: Peer Reviews
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +33,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             _buildStatsSection(currentUser!.email),
             const SizedBox(height: 20),
-            _buildSectionTitle("Work History"),
-            _buildWorkHistoryList(currentUser!.email),
-            const SizedBox(height: 30),
-            _buildSectionTitle("Peer Reviews"),
-            _buildPeerReviewsList(currentUser!.uid),
+
+            _buildTabToggle(),
+            const SizedBox(height: 20),
+            _selectedTab == 0
+                ? _buildWorkHistoryList(currentUser!.email)
+                : _buildPeerReviewsList(currentUser!.email),
             const SizedBox(height: 100), // Bottom padding for nav bar
           ],
         ),
@@ -371,23 +373,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: primaryBlue,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildWorkHistoryList(String? email) {
     if (email == null) return const SizedBox();
 
@@ -495,87 +480,153 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPeerReviewsList(String uid) {
+  Widget _buildTabToggle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _tabButton("Work History", 0)),
+          Expanded(child: _tabButton("Peer Reviews", 1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabButton(String label, int index) {
+    bool isActive = _selectedTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive ? primaryBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            color: isActive ? Colors.white : Colors.grey,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPeerReviewsList(String? email) {
+    if (email == null) return const SizedBox();
+
     return StreamBuilder<QuerySnapshot>(
+      // Uses collectionGroup query for reviews assigned to this user
       stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('reviews')
-          .orderBy('createdAt', descending: true)
+          .collectionGroup('reviews_data')
+          .where('targetUser', isEqualTo: email)
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint("PeerReview Error: ${snapshot.error}");
+          return _emptyState("Could not load reviews.");
+        }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _emptyState("No peer reviews received yet.");
         }
 
-        return SizedBox(
-          height: 160,
-          child: ListView.builder(
-            padding: const EdgeInsets.only(left: 24),
-            scrollDirection: Axis.horizontal,
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              var data =
-                  snapshot.data!.docs[index].data() as Map<String, dynamic>;
-              double rating = (data['rating'] ?? 0).toDouble();
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          itemCount: snapshot.data!.docs.length,
+          separatorBuilder: (c, i) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            var data =
+                snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            double rating = (data['rating'] ?? 0).toDouble();
+            String projectName = data['projectName'] ?? "Unknown Project";
+            String comment = data['comment'] ?? "No comment";
 
-              return Container(
-                width: 200,
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3F6D9F), Color(0xFF1A3B5D)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            return Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3F6D9F), Color(0xFF1A3B5D)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryBlue.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
                   ),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: List.generate(5, (i) {
-                        return Icon(
-                          Icons.star_rounded,
-                          size: 16,
-                          color: i < rating ? Colors.amber : Colors.white30,
-                        );
-                      }),
-                    ),
-                    Text(
-                      "\"${data['comment'] ?? 'No comment'}\"",
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontStyle: FontStyle.italic,
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        projectName,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
+                      Row(
+                        children: List.generate(5, (i) {
+                          return Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: i < rating ? Colors.amber : Colors.white24,
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "\"$comment\"",
+                    style: GoogleFonts.inter(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
                     ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.verified_user_outlined,
+                        color: Colors.white54,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Verified Teammate",
+                        style: GoogleFonts.inter(
                           color: Colors.white54,
-                          size: 14,
+                          fontSize: 11,
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          "Anonymous Peer",
-                          style: GoogleFonts.inter(
-                            color: Colors.white70,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

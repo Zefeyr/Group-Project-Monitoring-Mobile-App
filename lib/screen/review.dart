@@ -183,6 +183,7 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
         batch.set(reviewRef, {
           'reviewer': currentUserEmail,
           'targetUser': email,
+          'projectName': widget.projectName,
           'rating': _ratings[email],
           'comment': _controllers[email]?.text,
           'timestamp': FieldValue.serverTimestamp(),
