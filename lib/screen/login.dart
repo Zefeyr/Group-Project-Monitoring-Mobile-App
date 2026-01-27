@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'home.dart';
 import 'register.dart';
+import 'user_profile_setup.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -231,12 +232,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         : () async {
                             setState(() => _isLoading = true);
                             try {
-                              final credential = await AuthService()
+                              final result = await AuthService()
                                   .signInWithGoogle();
-                              if (credential != null && mounted) {
-                                Navigator.of(
-                                  context,
-                                ).popUntil((route) => route.isFirst);
+                              if (result != null && mounted) {
+                                if (result['isNewUser'] == true) {
+                                  final user =
+                                      (result['credential'] as UserCredential)
+                                          .user;
+                                  final name = user?.displayName ?? "Student";
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          UserProfileSetup(name: name),
+                                    ),
+                                  );
+                                } else {
+                                  Navigator.of(
+                                    context,
+                                  ).popUntil((route) => route.isFirst);
+                                }
                               }
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
