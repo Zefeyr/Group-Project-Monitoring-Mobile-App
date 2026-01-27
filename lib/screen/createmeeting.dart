@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_ble_peripheral/flutter_ble_peripheral.dart'; // NEW
 
 class CreateMeetingScreen extends StatefulWidget {
   final String projectId;
-
   const CreateMeetingScreen({super.key, required this.projectId});
 
   @override
@@ -18,17 +18,19 @@ class _CreateMeetingScreenState extends State<CreateMeetingScreen> {
 
   Future<void> _startMeeting() async {
     if (_nameController.text.isEmpty) return;
-
     setState(() => _isLoading = true);
 
     try {
-      // 1. Get the local device name so members can find it
-      // Note: On modern Android/iOS, this might be "iPhone" or "Pixel"
-      // unless the user named it specifically.
-      String localName = await FlutterBluePlus.adapterName;
+      // 1. Start Bluetooth Advertising (The "Broadcaster")
+      final AdvertiseData advertiseData = AdvertiseData(
+        // iOS requires a Service UUID to advertise in background/properly
+        serviceUuid: 'bf27730d-860a-4e09-889c-2d8b6a9e0fe7',
+        localName: _nameController.text, // This is what the joiner scans for
+      );
 
-      // 2. Save the meeting to Firestore
-      // We store the 'localName' so the Joiner knows who to look for.
+      await FlutterBlePeripheral().start(advertiseData: advertiseData);
+
+      // 2. Save to Firestore
       await FirebaseFirestore.instance
           .collection('projects')
           .doc(widget.projectId)
@@ -38,14 +40,12 @@ class _CreateMeetingScreenState extends State<CreateMeetingScreen> {
             'status': 'Active',
             'startTime': FieldValue.serverTimestamp(),
             'createdAt': DateTime.now(),
-            'hostDeviceName': localName, // This replaces the UUID logic
+            'hostDeviceName': _nameController.text, // Match the broadcast name
           });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Meeting Started! Members can now scan for you."),
-          ),
+          const SnackBar(content: Text("Meeting Started & Broadcasting!")),
         );
         Navigator.pop(context);
       }
