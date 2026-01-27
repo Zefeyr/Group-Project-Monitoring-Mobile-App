@@ -132,6 +132,44 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         'isPublicJoinEnabled': _isLinkEnabled,
       });
 
+      // 4. Create Notification for the Creator
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user?.uid)
+          .collection('notifications')
+          .add({
+        'title': 'Project Created',
+        'body': 'You have successfully created "${_nameController.text.trim()}".',
+        'type': 'project',
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // 5. Send Invite Notifications
+      for (String email in _invitedEmails) {
+        final userQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .limit(1)
+            .get();
+
+        if (userQuery.docs.isNotEmpty) {
+           final invitedUserId = userQuery.docs.first.id;
+           await FirebaseFirestore.instance
+              .collection('users')
+              .doc(invitedUserId)
+              .collection('notifications')
+              .add({
+                'title': 'Project Invitation',
+                'body': 'You have been invited to join "${_nameController.text.trim()}".',
+                'type': 'invite',
+                'isRead': false,
+                'createdAt': FieldValue.serverTimestamp(),
+              });
+        }
+      }
+
       if (mounted) Navigator.pop(context);
     } catch (e) {
       _showSnackBar('Error: $e');

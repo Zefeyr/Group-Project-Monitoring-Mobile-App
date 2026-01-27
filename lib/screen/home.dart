@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'project.dart';
 import 'createproject.dart';
-import 'profile.dart'; // Import Profile Screen
+import 'profile.dart'; 
 import 'task.dart';
 import 'chat.dart';
+import 'notifications.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color primaryBlue = const Color(0xFF1A3B5D);
   final Color accentBlue = const Color(0xFF3F6D9F);
 
@@ -30,20 +33,15 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
+      key: _scaffoldKey,
       extendBody: true,
       backgroundColor: const Color(0xFFF8F9FA),
+      // drawer removed
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.notifications_none_rounded,
-            color: accentBlue,
-            size: 28,
-          ),
-          onPressed: () {},
-        ),
+        leading: _buildNotificationIcon(), // Notification Icon triggers Drawer
         centerTitle: true,
         title: Text(
           'CollabQuest',
@@ -58,7 +56,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              // No navigation needed - main.dart StreamBuilder handles this
             },
           ),
         ],
@@ -78,6 +75,63 @@ class _HomeScreenState extends State<HomeScreen> {
           : null,
       body: pages[_currentIndex],
       bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  // --- NOTIFICATION WIDGETS ---
+
+  Widget _buildNotificationIcon() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return IconButton(
+        icon: Icon(Icons.notifications_none_rounded, color: accentBlue, size: 28),
+        onPressed: () {},
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('notifications')
+          .where('isRead', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        bool hasUnread = false;
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          hasUnread = true;
+        }
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: Icon(Icons.notifications_none_rounded, color: accentBlue, size: 28),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const NotificationSheet(),
+                );
+              },
+            ),
+            if (hasUnread)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

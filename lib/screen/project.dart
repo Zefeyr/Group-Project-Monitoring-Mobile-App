@@ -600,6 +600,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                       fontSize: 16,
                     ),
                   ),
+                  if (isOwner && data['status'] != 'Completed')
+                     IconButton(
+                        icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                        tooltip: "Mark Project as Completed",
+                        onPressed: () => _showCompletionDialog(context, members, data['name']),
+                     ),
+                  const Spacer(),
                   Icon(
                     _isSummaryExpanded ? Icons.expand_less : Icons.expand_more,
                     color: Colors.grey,
@@ -745,6 +752,67 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         ),
       ),
     );
+  }
+
+  void _showCompletionDialog(BuildContext context, List<String> members, String? name) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Complete Project?", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+         content: const Text("This will mark the project as finished and notify all team members. Iterate with caution!"),
+         actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              onPressed: () {
+                Navigator.pop(context);
+                _completeProject(members, name ?? "Project");
+              },
+              child: const Text("Confirm"),
+            )
+         ],
+      ),
+    );
+  }
+
+  Future<void> _completeProject(List<String> members, String name) async {
+    try {
+      // 1. Update Project Status
+      await FirebaseFirestore.instance
+          .collection('projects')
+          .doc(widget.projectId)
+          .update({'status': 'Completed'});
+      
+      // 2. Notify All Members
+      for (String email in members) {
+        final userQuery = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .limit(1)
+            .get();
+
+        if (userQuery.docs.isNotEmpty) {
+           final uid = userQuery.docs.first.id;
+           await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('notifications')
+              .add({
+                'title': 'Project Completed!',
+                'body': '$name has been marked as completed by the lead.',
+                'type': 'project',
+                'isRead': false,
+                'createdAt': FieldValue.serverTimestamp(),
+              });
+        }
+      }
+      _showSnack("Project Marked as Completed!", Colors.green);
+    } catch (e) {
+      _showSnack("Error: $e", Colors.red);
+    }
   }
 
   Widget _detailRow(String label, String value) {
