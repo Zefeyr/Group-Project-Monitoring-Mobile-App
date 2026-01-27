@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
 import 'package:flutter_ble_peripheral/flutter_ble_peripheral.dart'; // NEW
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/notification_service.dart';
 
 class CreateMeetingScreen extends StatefulWidget {
   final String projectId;
@@ -42,6 +44,31 @@ class _CreateMeetingScreenState extends State<CreateMeetingScreen> {
             'createdAt': DateTime.now(),
             'hostDeviceName': _nameController.text, // Match the broadcast name
           });
+
+      // 3. Notify Team Members
+      try {
+        final projectDoc = await FirebaseFirestore.instance
+            .collection('projects')
+            .doc(widget.projectId)
+            .get();
+
+        if (projectDoc.exists) {
+          final members = List<String>.from(projectDoc['members'] ?? []);
+          // Remove current user from notification list
+          final currentUserEmail = FirebaseAuth.instance.currentUser?.email;
+          members.remove(currentUserEmail);
+
+          await NotificationService().sendNotificationToRecipients(
+            recipientEmails: members,
+            title: "Meeting Started",
+            body: "${_nameController.text} has started. Join now!",
+            type: "meeting",
+            projectId: widget.projectId,
+          );
+        }
+      } catch (e) {
+        debugPrint("Error sending meeting noti: $e");
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -54,9 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-            },
+            onPressed: () => _showLogoutDialog(),
           ),
         ],
       ),
@@ -99,9 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
           .where('isRead', isEqualTo: false)
           .snapshots(),
       builder: (context, snapshot) {
-        bool hasUnread = false;
-        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-          hasUnread = true;
+        int unreadCount = 0;
+        if (snapshot.hasData) {
+          unreadCount = snapshot.data!.docs.length;
         }
 
         return Stack(
@@ -122,16 +120,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            if (hasUnread)
+            if (unreadCount > 0)
               Positioned(
-                top: 10,
-                right: 10,
+                top: 8,
+                right: 8,
                 child: Container(
-                  width: 10,
-                  height: 10,
+                  padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    unreadCount > 9 ? '9+' : '$unreadCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
@@ -249,11 +259,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final docs = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          
+
           // NEW: If viewing Completed list, hide projects the user has already reviewed
           if (isCompleted) {
-             List<dynamic> reviewedBy = data['reviewedBy'] ?? [];
-             if (reviewedBy.contains(userEmail)) return false;
+            List<dynamic> reviewedBy = data['reviewedBy'] ?? [];
+            if (reviewedBy.contains(userEmail)) return false;
           }
 
           if (_selectedFilter == 'All') return true;
@@ -667,6 +677,51 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          "Logout",
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        content: const Text("Are you sure you want to log out?"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Cancel",
+              style: GoogleFonts.inter(
+                color: Colors.grey,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              await FirebaseAuth.instance.signOut();
+            },
+            child: Text(
+              "Logout",
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -39,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             _selectedTab == 0
                 ? _buildProjectHistoryList(currentUser!.email)
-                : _buildPeerReviewsList(currentUser!.uid),
+                : _buildPeerReviewsList(currentUser!.email),
             const SizedBox(height: 100), // Bottom padding for nav bar
           ],
         ),
@@ -87,13 +87,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           itemCount: snapshot.data!.docs.length,
           separatorBuilder: (c, i) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
-            var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            var data =
+                snapshot.data!.docs[index].data() as Map<String, dynamic>;
             String name = data['name'] ?? "Project";
             String subject = data['subject'] ?? "General";
             Timestamp? deadline = data['deadline'];
-            String dateStr = deadline != null 
-               ? DateFormat('MMM d, y').format(deadline.toDate()) 
-               : "";
+            String dateStr = deadline != null
+                ? DateFormat('MMM d, y').format(deadline.toDate())
+                : "";
 
             return Container(
               padding: const EdgeInsets.all(16),
@@ -111,7 +112,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: Colors.green.shade50,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+                    child: Icon(
+                      Icons.check_circle,
+                      color: Colors.green.shade700,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -126,7 +131,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         Text(
-                          dateStr.isNotEmpty ? "$subject • Due $dateStr" : subject,
+                          dateStr.isNotEmpty
+                              ? "$subject • Due $dateStr"
+                              : subject,
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: Colors.grey,
@@ -365,45 +372,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collectionGroup('tasks')
-          .where('assignedTo', isEqualTo: email)
+          .collection('projects')
+          .where('members', arrayContains: email)
           .snapshots(),
-      builder: (context, snapshot) {
-        int totalTasks = 0;
+      builder: (context, projectSnapshot) {
+        int totalProjects = 0;
         int completed = 0;
 
-        if (snapshot.hasData) {
-          totalTasks = snapshot.data!.docs.length;
-          completed = snapshot.data!.docs
-              .where((doc) => (doc['status'] ?? '').toString().toLowerCase() == 'completed')
-              .length;
+        if (projectSnapshot.hasData) {
+          totalProjects = projectSnapshot.data!.docs.length;
+          // Count projects where this user has submitted a review (is in 'reviewedBy')
+          completed = projectSnapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final reviewedBy = List<String>.from(data['reviewedBy'] ?? []);
+            return reviewedBy.contains(email);
+          }).length;
         }
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: [
-              _statCard(
-                "Tasks",
-                "$totalTasks",
-                Icons.assignment_outlined,
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collectionGroup('reviews_data')
+              .where('targetUser', isEqualTo: email)
+              .snapshots(),
+          builder: (context, reviewSnapshot) {
+            String ratingStr = "N/A";
+
+            if (reviewSnapshot.hasData &&
+                reviewSnapshot.data!.docs.isNotEmpty) {
+              final docs = reviewSnapshot.data!.docs;
+              double totalRating = 0;
+              for (var doc in docs) {
+                totalRating += (doc['rating'] as num).toDouble();
+              }
+              double avg = totalRating / docs.length;
+              ratingStr = avg.toStringAsFixed(1);
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  _statCard(
+                    "Projects",
+                    "$totalProjects",
+                    Icons.folder_open_rounded,
+                  ),
+                  const SizedBox(width: 12),
+                  _statCard(
+                    "Completed",
+                    "$completed",
+                    Icons.check_circle_outline,
+                    color: Colors.green,
+                  ),
+                  const SizedBox(width: 12),
+                  _statCard(
+                    "Avg Rating",
+                    ratingStr,
+                    Icons.star_rounded,
+                    color: Colors.amber,
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              _statCard(
-                "Completed",
-                "$completed",
-                Icons.check_circle_outline,
-                color: Colors.green,
-              ),
-              const SizedBox(width: 12),
-              _statCard(
-                "Attendance",
-                "95%",
-                Icons.access_time_rounded,
-                color: Colors.orange,
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -519,7 +550,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             var data = doc.data() as Map<String, dynamic>;
 
             String status = data['status'] ?? 'Pending';
-            Color statusColor = status == 'Completed' ? Colors.green : Colors.orange;
+            Color statusColor = status == 'Completed'
+                ? Colors.green
+                : Colors.orange;
             if (status == 'Pending') statusColor = Colors.blue;
 
             String dateStr = "";
@@ -594,94 +627,116 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPeerReviewsList(String uid) {
+  Widget _buildPeerReviewsList(String? email) {
+    if (email == null) return const SizedBox();
+
     return StreamBuilder<QuerySnapshot>(
-      // Using known correct path: users/{uid}/reviews
+      // Using collectionGroup to find reviews across all projects
       stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('reviews')
-          .orderBy('createdAt', descending: true)
+          .collectionGroup('reviews_data')
+          .where('targetUser', isEqualTo: email)
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint("PeerReview Error: ${snapshot.error}");
+          return _emptyState("Could not load reviews.");
+        }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _emptyState("No peer reviews received yet.");
         }
 
-        return SizedBox(
-          height: 160,
-          child: ListView.builder(
-            padding: const EdgeInsets.only(left: 24),
-            scrollDirection: Axis.horizontal,
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              var data =
-                  snapshot.data!.docs[index].data() as Map<String, dynamic>;
-              double rating = (data['rating'] ?? 0).toDouble();
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          itemCount: snapshot.data!.docs.length,
+          separatorBuilder: (c, i) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            var data =
+                snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            double rating = (data['rating'] ?? 0).toDouble();
+            String comment = data['comment'] ?? "No comment";
+            String projectName = data['projectName'] ?? "Peer Review";
 
-              return Container(
-                width: 200,
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3F6D9F), Color(0xFF1A3B5D)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            return Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3F6D9F), Color(0xFF1A3B5D)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryBlue.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
                   ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryBlue.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            data['projectName'] ?? "Project",
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          projectName,
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    Row(
-                      children: List.generate(5, (i) {
-                        return Icon(
-                          Icons.star_rounded,
-                          size: 16,
-                          color: i < rating ? Colors.amber : Colors.white30,
-                        );
-                      }),
-                    ),
-                    Text(
-                      "\"${data['comment'] ?? 'No comment'}\"",
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: List.generate(5, (i) {
+                      return Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: i < rating ? Colors.amber : Colors.white30,
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "\"$comment\"",
+                    style: GoogleFonts.inter(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.verified_user_outlined,
+                        color: Colors.white54,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Verified Teammate",
+                        style: GoogleFonts.inter(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

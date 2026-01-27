@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import '../services/notification_service.dart';
 
 class CreateProjectScreen extends StatefulWidget {
   const CreateProjectScreen({super.key});
@@ -44,6 +45,23 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
           'members': FieldValue.arrayUnion([user.email]),
           'pendingInvitations': FieldValue.arrayRemove([user.email]),
         });
+        // 2. Notify Project Owner
+        try {
+          // Verify owner email to send noti
+          String ownerEmail = projectDoc['ownerEmail'];
+
+          await NotificationService().sendNotificationToRecipients(
+            recipientEmails: [ownerEmail],
+            title: "New Member Joined",
+            body:
+                "${user.email} joined ${projectDoc['name']} using the invite code.",
+            type: "invite", // or 'join'
+            projectId: projectDoc.id,
+          );
+        } catch (e) {
+          debugPrint("Failed to notify owner: $e");
+        }
+
         _showSnackBar("Welcome to ${projectDoc['name']}!");
         if (mounted) Navigator.pop(context);
       }
@@ -138,13 +156,14 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
           .doc(user?.uid)
           .collection('notifications')
           .add({
-        'title': 'Project Created',
-        'body': 'You have successfully created "${_nameController.text.trim()}".',
-        'type': 'project',
-        'isRead': false,
-        'createdAt': FieldValue.serverTimestamp(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+            'title': 'Project Created',
+            'body':
+                'You have successfully created "${_nameController.text.trim()}".',
+            'type': 'project',
+            'isRead': false,
+            'createdAt': FieldValue.serverTimestamp(),
+            'createdAt': FieldValue.serverTimestamp(),
+          });
 
       // 5. Send Invite Notifications
       for (String email in _invitedEmails) {
@@ -155,14 +174,15 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
             .get();
 
         if (userQuery.docs.isNotEmpty) {
-           final invitedUserId = userQuery.docs.first.id;
-           await FirebaseFirestore.instance
+          final invitedUserId = userQuery.docs.first.id;
+          await FirebaseFirestore.instance
               .collection('users')
               .doc(invitedUserId)
               .collection('notifications')
               .add({
                 'title': 'Project Invitation',
-                'body': 'You have been invited to join "${_nameController.text.trim()}".',
+                'body':
+                    'You have been invited to join "${_nameController.text.trim()}".',
                 'type': 'invite',
                 'isRead': false,
                 'createdAt': FieldValue.serverTimestamp(),

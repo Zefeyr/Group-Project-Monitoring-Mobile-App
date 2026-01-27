@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/notification_service.dart';
 
 class ReviewMembersScreen extends StatefulWidget {
   final String projectId;
@@ -187,6 +188,15 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
           'comment': _controllers[email]?.text,
           'timestamp': FieldValue.serverTimestamp(),
         });
+
+        // NOTIFY: Send notification to the person being reviewed
+        await NotificationService().sendNotificationToRecipients(
+          recipientEmails: [email],
+          title: "New Peer Review",
+          body: "You received a review for ${widget.projectName}.",
+          type: "review_received",
+          projectId: widget.projectId,
+        );
       }
 
       // 2. Mark THIS user as "Finished Reviewing" in a subcollection
@@ -204,8 +214,9 @@ class _ReviewMembersScreenState extends State<ReviewMembersScreen> {
 
       // 3. NEW: Add user to 'reviewedBy' array in the MAIN project doc
       // This allows efficient filtering in queries (e.g. Chat Screen)
-      final projectRef =
-          FirebaseFirestore.instance.collection('projects').doc(widget.projectId);
+      final projectRef = FirebaseFirestore.instance
+          .collection('projects')
+          .doc(widget.projectId);
 
       batch.update(projectRef, {
         'reviewedBy': FieldValue.arrayUnion([currentUserEmail]),
