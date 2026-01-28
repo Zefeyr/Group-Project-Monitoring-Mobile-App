@@ -151,8 +151,40 @@ Describe:
 # 🎨 3. Project Design
 
 ## **3.1 User Interface (UI)**
-*   **Optimization:** Flexible layouts for various screen sizes.
-*   **Gestures:** Swipe-to-delete, long-press actions.
+### **Home Page**
+<img width="8192" height="3371" alt="sequencedigram" src="https://github.com/user-attachments/assets/28126500-66e2-46c2-ae49-2754b98bd85a" />
+<p align="center">Figure 2.1.1 Sequence Diagram</p>
+
+### **Project List Page**
+<img width="987" height="493" alt="navflow" src="https://github.com/user-attachments/assets/56f47c43-f959-4575-b376-912b6363d39a" />
+<p align="center">
+    Figure 2.1.2 Screen Navigation Flow
+</p>
+
+### **Task Board**
+<img width="987" height="493" alt="navflow" src="https://github.com/user-attachments/assets/56f47c43-f959-4575-b376-912b6363d39a" />
+<p align="center">
+    Figure 2.1.2 Screen Navigation Flow
+</p>
+
+### **Message**
+<img width="987" height="493" alt="navflow" src="https://github.com/user-attachments/assets/56f47c43-f959-4575-b376-912b6363d39a" />
+<p align="center">
+    Figure 2.1.2 Screen Navigation Flow
+</p>
+
+### **Group Message**
+<img width="987" height="493" alt="navflow" src="https://github.com/user-attachments/assets/56f47c43-f959-4575-b376-912b6363d39a" />
+<p align="center">
+    Figure 2.1.2 Screen Navigation Flow
+</p>
+
+### **Notifications**
+<img width="987" height="493" alt="navflow" src="https://github.com/user-attachments/assets/56f47c43-f959-4575-b376-912b6363d39a" />
+<p align="center">
+    Figure 2.1.2 Screen Navigation Flow
+</p>
+
 
 ## **3.2 User Experience (UX)**
 *   **Navigation flow:**
