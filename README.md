@@ -55,9 +55,9 @@ An app that helps with organizing your group project and connect with other memb
 
 ### **e. Features & Functionalities**
 *   **Task Tracking & Status Updates:** Displays tasks, deadlines, and current status.
-*   **Real-time Communication & "Beep":** In-app chat with an urgent, high-priority "beep" via push notification.
+*   **Real-time Communication & "Beep":** Project task with an urgent, high-priority "beep" via push notification.
 *   **Collaborative Review System:** Allows members to upload work for others to provide structured ratings and feedback.
-*   **Location-Based Check-in (Optional):** Uses Bluetooth/GPS to verify attendance at physical group meetings.
+*   **Location-Based Check-in:** Uses Bluetooth/GPS to verify attendance at physical group meetings.
 
 ## **1.2 Justification of the App**
 The Group Project Monitoring App is designed to solve collaboration problems by focusing on simplicity and accountability.
@@ -97,13 +97,28 @@ The Group Project Monitoring App is designed to solve collaboration problems by 
 | `provider` | State Management |
 | `encrypt` | AES-256 Encryption |
 
-## **2.2 Database Structure (Firestore)**
-*   **Users** (`users/{userId}`): Profiles.
-*   **Projects** (`projects/{projectId}`): Metadata, members.
-*   **Tasks** (`projects/{projectId}/tasks/{taskId}`): Task details.
-*   **Chat** (`projects/{projectId}/chat/{messageId}`): Group messages.
+## **2.2 Platform Compatibility**
+Describe:
+- **Compatibility with smartphones**: 
+  - **Android**: Fully compatible with Android devices running Android 5.0 (Lollipop) or higher (API Level 21+).
+  - **iOS**: Fully compatible with iPhone devices running iOS 15.0 or higher.
+- **Compatibility with wearables**: 
+  - Not currently compatible with Wear OS or Apple Watch.
+- **OS-level constraints**: 
+  - **iOS**: Requires iOS 15.0+ due to deployment target settings in Podfile.
+  - **Android**: Requires Bluetooth Low Energy (BLE) support for the "Beep" and Meeting Check-in features.
+  - **Permissions**: Requires Camera (for profile), Location (for Bluetooth scanning), and Notification permissions.
 
-## **2.3 Logical Design**
+## 2.3 Database Structure (Firestore)
+*   **Users** (`users/{userId}`): Stores user profiles.
+    *   **Notifications** (`users/{userId}/notifications/{notiId}`): User alerts.
+*   **Projects** (`projects/{projectId}`): Project metadata & members.
+    *   **Tasks** (`projects/{projectId}/tasks/{taskId}`): Task details.
+    *   **Messages** (`projects/{projectId}/messages/{messageId}`): Group chat history.
+    *   **Meetings** (`projects/{projectId}/meetings/{meetingId}`): Bluetooth attendance sessions.
+    *   **Reviews** (`projects/{projectId}/reviews_data/{reviewId}`): Peer review submissions.
+    
+## **2.4 Logical Design**
 
 ### **Sequence Diagram**
 <img width="8192" height="3371" alt="sequencedigram" src="https://github.com/user-attachments/assets/28126500-66e2-46c2-ae49-2754b98bd85a" />
@@ -117,7 +132,7 @@ The Group Project Monitoring App is designed to solve collaboration problems by 
 
 
 
-## **2.2 Project Planning**
+## **2.5 Project Planning**
 
 ### **a. Gantt Chart & Timeline**
 | Task | Duration | Start Date | End Date |
@@ -140,7 +155,20 @@ The Group Project Monitoring App is designed to solve collaboration problems by 
 *   **Gestures:** Swipe-to-delete, long-press actions.
 
 ## **3.2 User Experience (UX)**
-Designed for intuitive navigation and consistency, ensuring a seamless flow between Tasks, Chat, and Reviews.
+*   **Navigation flow:**
+    *   **Bottom Navigation Bar:** Provides persistent, one-tap access to primary screens (Home, Tasks, Chat, Profile), reducing clicks for high-frequency actions.
+    *   **Dashboard-First:** The Home screen aggregates critical data (deadlines, active projects) so users see status immediately upon app launch.
+    *   **Contextual FABs:** "Create" actions (Project/Task) are accessible via Floating Action Buttons or clear "+" icons, distinct from navigation elements.
+
+*   **Ease of use:**
+    *   **Mobile-First Design:** Buttons and cards are sized for touch targets (min 48px height for buttons).
+    *   **Smart Defaults:** Forms pre-fill known data (e.g., current user as "Project Lead") to speed up setup.
+    *   **Task Management:** Simple tap mechanisms to view details, with clear visual indicators for task status (color-coded).
+
+*   **Avoiding confusion:**
+    *   **Empty States:** Screens with no data display helpful illustrations and instruction text (e.g., "No group chats yet") rather than blank screens.
+    *   **Visual Hierarchy:** "Beeps" (urgent) use Red, while standard info uses Blue, ensuring users prioritize correctly.
+    *   **Success Feedback:** Snackbars confirm actions (e.g., "Project Created", "Invite code copied"), reassuring users that the system worked.
 
 ## **3.3 Consistency**
 *   **Color Scheme:** Primary Blue for trust, Red for urgent notifications.
