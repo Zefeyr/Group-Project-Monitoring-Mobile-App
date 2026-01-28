@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_ble_peripheral/flutter_ble_peripheral.dart'; // NEW
 import 'package:firebase_auth/firebase_auth.dart';
 
 class VerifyPresenceScreen extends StatefulWidget {
@@ -26,6 +27,51 @@ class VerifyPresenceScreen extends StatefulWidget {
 class _VerifyPresenceScreenState extends State<VerifyPresenceScreen> {
   bool _isScanning = false;
   String _status = "Ready to scan";
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isHost) {
+      _startAdvertising();
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.isHost) {
+      _stopAdvertising();
+    }
+    super.dispose();
+  }
+
+  Future<void> _startAdvertising() async {
+    final AdvertiseData advertiseData = AdvertiseData(
+      serviceUuid: 'bf27730d-860a-4e09-889c-2d8b6a9e0fe7',
+      localName: widget.hostName,
+    );
+    await FlutterBlePeripheral().start(advertiseData: advertiseData);
+  }
+
+  Future<void> _stopAdvertising() async {
+    await FlutterBlePeripheral().stop();
+  }
+
+  Future<void> _endMeeting() async {
+    try {
+      await _stopAdvertising();
+      await FirebaseFirestore.instance
+          .collection('projects')
+          .doc(widget.projectId)
+          .collection('meetings')
+          .doc(widget.meetingId)
+          .update({'status': 'Ended'});
+      
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error ending meeting: $e")));
+    }
+  }
 
   Future<void> _scanForHost() async {
     await [
@@ -109,12 +155,23 @@ class _VerifyPresenceScreenState extends State<VerifyPresenceScreen> {
                       fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                if (widget.isHost)
+                if (widget.isHost) ...[
                   const Text(
                     "Your device is broadcasting. Keep this screen open.",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
-                  )
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _endMeeting,
+                    icon: const Icon(Icons.stop_circle_outlined),
+                    label: const Text("END SESSION"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ]
                 else ...[
                   if (_isScanning) const CircularProgressIndicator(),
                   if (!_isScanning && _status != "Verified!")

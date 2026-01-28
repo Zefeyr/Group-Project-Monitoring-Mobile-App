@@ -23,16 +23,7 @@ class _CreateMeetingScreenState extends State<CreateMeetingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Start Bluetooth Advertising (The "Broadcaster")
-      final AdvertiseData advertiseData = AdvertiseData(
-        // iOS requires a Service UUID to advertise in background/properly
-        serviceUuid: 'bf27730d-860a-4e09-889c-2d8b6a9e0fe7',
-        localName: _nameController.text, // This is what the joiner scans for
-      );
-
-      await FlutterBlePeripheral().start(advertiseData: advertiseData);
-
-      // 2. Save to Firestore
+      // 1. Save to Firestore
       await FirebaseFirestore.instance
           .collection('projects')
           .doc(widget.projectId)
