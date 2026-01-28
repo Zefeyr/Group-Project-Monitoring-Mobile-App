@@ -743,7 +743,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     ),
                   ),
                   const Spacer(),
-                  _buildMiniTaskBadge(email, isSelected),
+                  _buildMiniTaskBadge(
+                      email, isSelected, isMe, currentUserEmail == ownerEmail),
                 ],
               ),
             ),
@@ -753,7 +754,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
-  Widget _buildMiniTaskBadge(String email, bool isSelected) {
+  Widget _buildMiniTaskBadge(
+      String email, bool isSelected, bool isMe, bool isProjectOwner) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('projects')
@@ -763,12 +765,19 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           .snapshots(),
       builder: (context, taskSnap) {
         String taskText = "Idle";
+        String? taskName;
         if (taskSnap.hasData) {
           final activeTasks = taskSnap.data!.docs
               .where((doc) => doc['status'] != 'Completed')
               .toList();
-          if (activeTasks.isNotEmpty) taskText = activeTasks.first['taskName'];
+          if (activeTasks.isNotEmpty) {
+            taskText = activeTasks.first['taskName'];
+            taskName = taskText;
+          }
         }
+
+        bool showBeep = isProjectOwner && !isMe && taskName != null;
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
@@ -777,12 +786,25 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.bolt_rounded,
-                size: 10,
-                color: isSelected ? Colors.orangeAccent : Colors.orange,
-              ),
-              const SizedBox(width: 4),
+              if (showBeep)
+                InkWell(
+                  onTap: () => _sendBeep(email, taskName!),
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 4.0),
+                    child: Icon(
+                      Icons.notifications_active_rounded,
+                      size: 14,
+                      color: isSelected ? Colors.orangeAccent : Colors.orange,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  Icons.bolt_rounded,
+                  size: 10,
+                  color: isSelected ? Colors.orangeAccent : Colors.orange,
+                ),
+              if (!showBeep) const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   taskText,
@@ -799,6 +821,43 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         );
       },
     );
+  }
+
+  void _sendBeep(String targetEmail, String taskName) async {
+    try {
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: targetEmail)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isEmpty) {
+        _showSnack("User not found", Colors.red);
+        return;
+      }
+
+      final targetUid = userQuery.docs.first.id;
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(targetUid)
+          .collection('notifications')
+          .add({
+        'title': "Beep from Project Leader",
+        'body': "Reminder: Please check your task '$taskName'.",
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'type': 'beep',
+        'senderEmail': currentUser?.email,
+        'projectId': widget.projectId,
+      });
+
+      _showSnack("Beep sent to ${targetEmail.split('@')[0]}!", Colors.green);
+    } catch (e) {
+      debugPrint("Error sending beep: $e");
+      _showSnack("Failed to send beep", Colors.red);
+    }
   }
 
   Widget _buildUserSpecificHeader(
