@@ -28,7 +28,7 @@ An app that helps with organizing your group project and connect with other memb
 
 # 📁 Project Documentation
 
-# 🚀 1. Project Overview
+# 1. Project Overview
 
 ## **1.1 Mobile App Details**
 
@@ -44,16 +44,16 @@ An app that helps with organizing your group project and connect with other memb
 - To streamline group project management by improving communication and collaboration among team members through features like real time notifications, task tracking, peer reviews, and location based meeting assistance.  
 - To enhance the efficiency and effectiveness of group project collaboration by providing tools for real time communication, task management, reminders, peer feedback, and in person coordination through sensors and Bluetooth.  
 
-### **c. Target Users**
+### **d. Target Users**
 - Students working on group projects in colleges or universities.
 - Remote and hybrid teams needing efficient collaboration tools.
 - Small project-based teams requiring coordination.
 
-### **d. Platform**
+### **e. Platform**
 * **Platform:** Android and iOS (Flutter)
 * **Reasoning:** Cross-platform development from a single codebase minimizes development time while delivering native performance.
 
-### **e. Features & Functionalities**
+### **f. Features & Functionalities**
 * **Task Tracking & Status Updates:** Displays tasks, deadlines, and current status.
 * **Real-time Communication & "Beep":** Project task with an urgent, high-priority "beep" via push notification.
 * **Collaborative Review System:** Allows members to upload work for others to provide structured ratings and feedback.
@@ -70,7 +70,7 @@ The Group Project Monitoring App is designed to solve collaboration problems by 
 
 ---
 
-# 📊 2. Technical Architecture
+# 2. Technical Architecture
 
 ## **2.1 Backend & Infrastructure**
 
@@ -145,36 +145,36 @@ Describe:
 
 ---
 
-# 🎨 3. Project Design
+# 3. Project Design
 
 ## **3.1 User Interface (UI)**
 
 ### **3.1.1 Home Page**
-<img  width="300" height="500" src="https://github.com/user-attachments/assets/7607b5ea-73d9-4c6f-98f3-e97dea8feedc" width="800" alt="Home Page">
+<img width="250" height="500" src="https://github.com/user-attachments/assets/7607b5ea-73d9-4c6f-98f3-e97dea8feedc" width="800" alt="Home Page">
 <p align="center">Figure 3.1.1 Home Page</p>
 
 ### **3.1.2 Project List Page**
-<img src="https://github.com/user-attachments/assets/6509aade-fd0e-4450-8cd1-4464578cf212" width="800" alt="Project List">
+<img width="250" height="500" src="https://github.com/user-attachments/assets/6509aade-fd0e-4450-8cd1-4464578cf212" width="800" alt="Project List">
 <p align="center">Figure 3.1.2 Project List Page</p>
 
 ### **3.1.3 Task Board**
-<img src="https://github.com/user-attachments/assets/85437f87-4e3b-4bf1-8dc7-080a14dc9f07" width="800" alt="Task Board">
+<img width="250" height="500" src="https://github.com/user-attachments/assets/85437f87-4e3b-4bf1-8dc7-080a14dc9f07" width="800" alt="Task Board">
 <p align="center">Figure 3.1.3 Task Board</p>
 
 ### **3.1.4 Message**
-<img src="https://github.com/user-attachments/assets/aaf6af8e-39ea-463c-aaff-c54bf68d8b47" width="800" alt="Message">
+<img width="250" height="500" src="https://github.com/user-attachments/assets/aaf6af8e-39ea-463c-aaff-c54bf68d8b47" width="800" alt="Message">
 <p align="center">Figure 3.1.4 Message</p>
 
 ### **3.1.5 Group Message**
-<img src="https://github.com/user-attachments/assets/829eee74-b40f-444a-b631-186fba8d4e56" width="800" alt="Group Message">
+<img width="250" height="500" src="https://github.com/user-attachments/assets/829eee74-b40f-444a-b631-186fba8d4e56" width="800" alt="Group Message">
 <p align="center">Figure 3.1.5 Group Message</p>
 
 ### **3.1.6 Profile**
-<img src="https://github.com/user-attachments/assets/83134c86-5f99-48e9-b2ca-115c7cd1f5d1" width="800" alt="Notifications">
+<img width="250" height="500" src="https://github.com/user-attachments/assets/83134c86-5f99-48e9-b2ca-115c7cd1f5d1" width="800" alt="Notifications">
 <p align="center">Figure 3.1.6 Profile Setting</p>
 
 ### **3.1.7 Notification**
-<img src="https://github.com/user-attachments/assets/4404b6c0-1eb3-4097-9fb8-d364969669dd" width="800" alt="Profile">
+<img width="250" height="500" src="https://github.com/user-attachments/assets/4404b6c0-1eb3-4097-9fb8-d364969669dd" width="800" alt="Profile">
 <p align="center">Figure 3.1.7 Notification</p>
 
 
@@ -201,6 +201,6 @@ Describe:
 
 ---
 
-# 📚 References
+# References
 1. Google. (2026). *Flutter Documentation*. 
 2. Firebase. (2026). *Firestore Security Rules*.
