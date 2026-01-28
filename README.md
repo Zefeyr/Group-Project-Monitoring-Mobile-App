@@ -63,17 +63,10 @@ Why Flutter: Chosen for cross-platform development from a single codebase, which
 
 ### **f. Features & Functionalities**
 List and explain the main features:
-- Feature 1 — Task Tracking & Status Updates
-Displays tasks, deadlines, and current status (to do, in progress, etc.)
-
-- Feature 2 — Real-time Communication & "Beep"
-In-app chat with an urgent, high-priority "beep" via push notification.
-
-- Feature 3 — Collaborative Review System
-Allows members to upload work for others to provide structured ratings and feedback.
-
-- Feature 4 (Optional) - Location-Based Check-in
-Uses Bluetooth/GPS to automatically verify and log attendance at physical group meetings.
+*   **Task Tracking & Status Updates:** Displays tasks, deadlines, and current status.
+*   **Real-time Communication & "Beep":** In-app chat with an urgent, high-priority "beep" via push notification.
+*   **Collaborative Review System:** Allows members to upload work for others to provide structured ratings and feedback.
+*   **Location-Based Check-in (Optional):** Uses Bluetooth/GPS to verify attendance at physical group meetings.
 
 ## **1.2 Justification of the Proposed App**
 The proposed app which is Group Project Monitoring App is conceived to solved such problems in students and team collaboration which is focusing on simplicity and accountability.
