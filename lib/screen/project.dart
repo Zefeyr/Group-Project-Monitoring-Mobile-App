@@ -651,6 +651,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                   projectId: widget.projectId,
                                   hostName:
                                       meetingData?['hostDeviceName'] ?? "",
+                                  isHost: isOwner,
                                 ),
                               ),
                             );
@@ -681,7 +682,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     isLocked
                         ? "PROJECT LOCKED"
                         : (hasActiveMeeting
-                              ? "VERIFY PRESENCE"
+                              ? "VERIFY ATTENDANCE"
                               : (isOwner
                                     ? "CREATE MEETING"
                                     : "WAITING FOR LEAD")),

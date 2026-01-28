@@ -14,7 +14,10 @@ class VerifyPresenceScreen extends StatefulWidget {
     required this.meetingId,
     required this.projectId,
     required this.hostName,
+    this.isHost = false,
   });
+
+  final bool isHost;
 
   @override
   State<VerifyPresenceScreen> createState() => _VerifyPresenceScreenState();
@@ -91,24 +94,127 @@ class _VerifyPresenceScreenState extends State<VerifyPresenceScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Verify Attendance")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _status,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      body: Column(
+        children: [
+          // Top Section: Status & Action
+          Container(
+            padding: const EdgeInsets.all(24),
+            width: double.infinity,
+            color: Colors.white,
+            child: Column(
+              children: [
+                Text(
+                  widget.isHost ? "You are Hosting" : _status,
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                if (widget.isHost)
+                  const Text(
+                    "Your device is broadcasting. Keep this screen open.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  )
+                else ...[
+                  if (_isScanning) const CircularProgressIndicator(),
+                  if (!_isScanning && _status != "Verified!")
+                    ElevatedButton(
+                      onPressed: _scanForHost,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 12),
+                      ),
+                      child: const Text("Scan for Lead Device"),
+                    ),
+                ],
+              ],
             ),
-            const SizedBox(height: 24),
-            if (_isScanning) const CircularProgressIndicator(),
-            if (!_isScanning && _status != "Verified!")
-              ElevatedButton(
-                onPressed: _scanForHost,
-                child: const Text("Scan for Lead Device"),
-              ),
-          ],
-        ),
+          ),
+          const Divider(height: 1),
+
+          // Bottom Section: Attendance List
+          Expanded(
+            child: _buildAttendanceList(),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildAttendanceList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            "Attendance List",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('projects')
+                .doc(widget.projectId)
+                .collection('meetings')
+                .doc(widget.meetingId)
+                .collection('attendees')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final docs = snapshot.data!.docs;
+              if (docs.isEmpty) {
+                return const Center(
+                  child: Text("No attendees verified yet."),
+                );
+              }
+
+              return ListView.builder(
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  final email = data['email'] ?? 'Unknown';
+                  final status = data['status'] ?? 'Present';
+                  final timestamp = data['timestamp'] as Timestamp?;
+                  final timeStr = timestamp != null
+                      ? TimeOfDay.fromDateTime(timestamp.toDate())
+                          .format(context)
+                      : "-";
+
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.green.shade100,
+                      child: const Icon(Icons.check, color: Colors.green),
+                    ),
+                    title: Text(email.split('@')[0]), // Simple Name
+                    subtitle: Text(email),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(status,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green)),
+                        Text(timeStr, style: const TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
