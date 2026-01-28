@@ -196,7 +196,7 @@ Describe:
 ## **3.3 Consistency**
 * **Color Scheme:** Primary Blue for trust, Red for urgent notifications.
 * **Design Patterns:** Standardized card views and buttons.
-* **Logo:** Consistent placement for "Home" navigation.
+* **Bottom Bar:** Consistent "navigation bar" placement for users' navigation.
 
 ---
 
