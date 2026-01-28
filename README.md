@@ -2,7 +2,7 @@
 
 An app that helps with organizing your group project and connect with other members. Features include "beeping" others for attention, task tracking, reminders, push notifications, peer reviews, and using sensors/Bluetooth for face-to-meeting meetings.
 
-# 📌 Group Information
+# Group Information
 
 ## Member Details
 
@@ -22,11 +22,11 @@ An app that helps with organizing your group project and connect with other memb
 | **Project Ideation & Initiation** | Draft app title & background of the problem | Write purpose/objectives & target user | Define preferred platform & features/functionalities | Justification of app selection |
 | **Requirement Analysis & Planning** | Evaluate technical feasibility & CRUD operations | Plan backend structure & select packages/plugins | Ensure platform compatibility & database structure | Create sequence diagram & screen navigation flow |
 | **Timeline Management** | Project Initiation stage | Requirement Analysis stage | Design stage | Development & Presentation stage |
-| **Project Design (UI/UX)** | Design Home screen & Login screen UI | Design Main Feature screens UI | Apply UX principles: navigation flow & intuitiveness | Ensure consistency: color scheme, logo, forms |
+| **Project Design (UI/UX)** | Design Home screen & Login screen UI | Design Main Feature screens UI | Apply UX principles: navigation flow & intuitiveness | Ensure consistency: color scheme, logo, forms | **Development** | Task page, Chat page (Tasks and Messaging features) | Home page, Project page (Bluetooth meeting, Project Management features) | Notification widget, Profile Page (Peer review, Project history features) | Welcoming Page, Login Page, Sign Up Page (Authentication, Firestore Database) |
 
 > **Note:** Everyone is responsible for reviewing and refining each other's work to maintain quality and balance.
 
-# 📁 Project Documentation
+# Project Documentation
 
 # 1. Project Overview
 
@@ -66,7 +66,7 @@ The Group Project Monitoring App is designed to solve collaboration problems by 
 * **The Idea:** Born from the frustration of lack of visibility in group work ("social loafing").
 * **Existing Solutions & Gaps:** Tools like Trello or Jira are often too complex, expensive, or overkill for simple student projects.
 * **Uniqueness:** * **Accountability Score:** Visualizes individual contribution based on task completion and peer feedback.
-    * **Simplicity:** A mobile-first, low-friction tool designed specifically for short-term, academic collaboration.
+* **Simplicity:** A mobile-first, low-friction tool designed specifically for short-term, academic collaboration.
 
 ---
 
@@ -151,31 +151,31 @@ Describe:
 
 ### **3.1.1 Home Page**
 <img width="250" height="500" src="https://github.com/user-attachments/assets/7607b5ea-73d9-4c6f-98f3-e97dea8feedc" width="800" alt="Home Page">
-<p align="center">Figure 3.1.1 Home Page</p>
+<p> Figure 3.1.1 Home Page</p>
 
 ### **3.1.2 Project List Page**
 <img width="250" height="500" src="https://github.com/user-attachments/assets/6509aade-fd0e-4450-8cd1-4464578cf212" width="800" alt="Project List">
-<p align="center">Figure 3.1.2 Project List Page</p>
+<p>Figure 3.1.2 Project List Page</p>
 
 ### **3.1.3 Task Board**
 <img width="250" height="500" src="https://github.com/user-attachments/assets/85437f87-4e3b-4bf1-8dc7-080a14dc9f07" width="800" alt="Task Board">
-<p align="center">Figure 3.1.3 Task Board</p>
+<p>Figure 3.1.3 Task Board</p>
 
 ### **3.1.4 Message**
 <img width="250" height="500" src="https://github.com/user-attachments/assets/aaf6af8e-39ea-463c-aaff-c54bf68d8b47" width="800" alt="Message">
-<p align="center">Figure 3.1.4 Message</p>
+<p>Figure 3.1.4 Message</p>
 
 ### **3.1.5 Group Message**
 <img width="250" height="500" src="https://github.com/user-attachments/assets/829eee74-b40f-444a-b631-186fba8d4e56" width="800" alt="Group Message">
-<p align="center">Figure 3.1.5 Group Message</p>
+<p>Figure 3.1.5 Group Message</p>
 
 ### **3.1.6 Profile**
 <img width="250" height="500" src="https://github.com/user-attachments/assets/83134c86-5f99-48e9-b2ca-115c7cd1f5d1" width="800" alt="Notifications">
-<p align="center">Figure 3.1.6 Profile Setting</p>
+<p>Figure 3.1.6 Profile Setting</p>
 
 ### **3.1.7 Notification**
 <img width="250" height="500" src="https://github.com/user-attachments/assets/4404b6c0-1eb3-4097-9fb8-d364969669dd" width="800" alt="Profile">
-<p align="center">Figure 3.1.7 Notification</p>
+<p>Figure 3.1.7 Notification</p>
 
 
 ## **3.2 User Experience (UX)**
