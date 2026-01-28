@@ -150,7 +150,7 @@ Describe:
 ## **3.1 User Interface (UI)**
 
 ### **3.1.1 Home Page**
-<img src="https://github.com/user-attachments/assets/7607b5ea-73d9-4c6f-98f3-e97dea8feedc" width="800" alt="Home Page">
+<img  width="300" height="500" src="https://github.com/user-attachments/assets/7607b5ea-73d9-4c6f-98f3-e97dea8feedc" width="800" alt="Home Page">
 <p align="center">Figure 3.1.1 Home Page</p>
 
 ### **3.1.2 Project List Page**
