@@ -56,7 +56,7 @@ An app that helps with organizing your group project and connect with other memb
 * **Task Tracking & Status Updates:** Displays tasks, deadlines, and current status.
 * **Real-time Communication & "Beep":** Project task with an urgent, high-priority "beep" via push notification.
 * **Collaborative Review System:** Allows members to upload work for others to provide structured ratings and feedback.
-* **Location-Based Check-in:** Uses Bluetooth/GPS to verify attendance at physical group meetings.
+* **Location-Based Check-in:** Uses Bluetooth to verify attendance at physical group meetings.
 
 ## **1.2 Justification of the App**
 The Group Project Monitoring App is designed to solve collaboration problems by focusing on simplicity and accountability.
