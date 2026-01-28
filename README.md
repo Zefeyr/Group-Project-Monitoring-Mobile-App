@@ -193,10 +193,6 @@ Explain:
 * **Logo Usage:** The logo should consistently appear in the same location, typically the top-left corner of the navigation bar, to provide a "Home" link.
 * **Forms:** Consistency in forms prevents user errors and speeds up data entry for tasks like Work Submission or Login.
 
-Include:
-
-yaml
-Copy code
 
 ---
 # 📚 References
