@@ -159,13 +159,14 @@ The app utilizes a Bottom Navigation Bar for its primary features (Tasks, Chat, 
 ### **a. Gantt Chart & Timeline**
 | Task | Duration | Start Date | End Date |
 |-------|----------|------------|----------|
-| Project Initiation | 2 Weeks | Jan 20, 2026 | Feb 3, 2026 |
-- Requirement Analysis  
-- Design  
-- Development  
+| Project Initiation | 2 Weeks | Nov 10, 2025 | Nov 24, 2025 |
+| Requirement Analysis | 2 Weeks | Nov 25, 2025 | Dec 8, 2025 |
+| Design (UI/UX) | 2 Weeks | Dec 9, 2025 | Dec 23, 2025 |
+| Development | 4 Weeks | Dec 24, 2025 | Jan 21, 2026 |
+| Testing & Presentation | 1 Weeks | Jan 22, 2026 | Jan 28, 2026 |
 
-* **Start Date:** January 20, 2026
-* **End Date:** ##########JANGAN LUPA EJAS (Presentation Date)
+* **Start Date:** Nov 10, 2025
+* **End Date:** Jan 20, 2026
 
 ---
 
