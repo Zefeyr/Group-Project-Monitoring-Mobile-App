@@ -104,8 +104,8 @@ Describe:
   - Not currently compatible with Wear OS or Apple Watch.
 - **OS-level constraints**: 
   - **iOS**: Requires iOS 15.0+ due to deployment target settings in Podfile.
-  - **Android**: Requires Bluetooth Low Energy (BLE) support for the "Beep" and Meeting Check-in features.
-  - **Permissions**: Requires Camera (for profile), Location (for Bluetooth scanning), and Notification permissions.
+  - **Android**: Requires Bluetooth Low Energy (BLE) support for the Meeting Check-in features.
+  - **Permissions**: Requires Album (for profile picture), Location (for Bluetooth scanning), and Notification permissions.
 
 ## 2.3 Database Structure (Firestore)
 * **Users** (`users/{userId}`): Stores user profiles.
