@@ -9,6 +9,7 @@ import 'profile.dart';
 import 'task.dart';
 import 'chat.dart';
 import 'notifications.dart';
+import '../services/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +24,19 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color primaryBlue = const Color(0xFF1A3B5D);
   final Color accentBlue = const Color(0xFF3F6D9F);
+
+  @override
+  void initState() {
+    super.initState();
+    _saveToken();
+  }
+
+  void _saveToken() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      NotificationService().saveFcmToken(user.uid);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -710,6 +724,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             onPressed: () async {
               Navigator.pop(context); // Close dialog
+              await NotificationService().deleteToken();
               await FirebaseAuth.instance.signOut();
             },
             child: Text(

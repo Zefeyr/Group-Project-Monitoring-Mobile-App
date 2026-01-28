@@ -6,6 +6,8 @@ import 'screen/user_profile_setup.dart';
 import 'screen/welcome.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'screen/home.dart';
+import 'services/notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
   // Ensure Flutter bindings are initialized before Firebase
@@ -13,6 +15,12 @@ void main() async {
 
   // Initialize Firebase using the generated options
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Set background handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // Initialize Notifications (Request perm, setup local notif)
+  await NotificationService().initialize();
 
   runApp(const MyApp());
 }

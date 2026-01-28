@@ -595,13 +595,27 @@ class TaskCard extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(context);
               if (taskRef != null) {
-                await taskRef!.update({'status': 'Completed'});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Task completed!"),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                try {
+                  await taskRef!.update({'status': 'Completed'});
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Task completed!"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint("Error completing task: $e");
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Failed to complete task. please check permissions."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               }
             },
             child: const Text("Confirm", style: TextStyle(color: Colors.white)),

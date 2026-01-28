@@ -10,6 +10,7 @@ import 'createmeeting.dart';
 import 'verifymeeting.dart';
 import 'review.dart';
 import '../services/notification_service.dart';
+import 'task.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final String projectId;
@@ -211,6 +212,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                 ),
                 _buildMemberSlider(members, currentUserEmail, ownerEmail),
+                const SizedBox(height: 20),
+                if (members.isNotEmpty && _selectedMemberIndex < members.length)
+                  _buildSelectedMemberTasks(members[_selectedMemberIndex],
+                      isOwner || members[_selectedMemberIndex] == currentUserEmail),
                 const SizedBox(height: 30),
                 _buildExpandableDetails(data, isOwner, members, isLocked),
                 const SizedBox(height: 20),
@@ -1007,6 +1012,104 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildSelectedMemberTasks(String memberEmail, bool canEdit) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                "Tasks for ${memberEmail.split('@')[0]}",
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: primaryBlue,
+                ),
+              ),
+              const Spacer(),
+              if (canEdit)
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  color: primaryBlue,
+                  onPressed: () {
+                    // Quick add task for this user
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateTaskScreen(
+                          projectId: widget.projectId,
+                          projectMembers: [memberEmail], // Pre-filter or logic?
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('projects')
+                .doc(widget.projectId)
+                .collection('tasks')
+                .where('assignedTo', isEqualTo: memberEmail)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final tasks = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return (data['status'] ?? 'Active') != 'Completed';
+              }).toList();
+
+              if (tasks.isEmpty) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Text(
+                    "No active tasks assigned.",
+                    style: GoogleFonts.inter(
+                      color: Colors.grey,
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: tasks.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final taskDoc = tasks[index];
+                  final taskData = taskDoc.data() as Map<String, dynamic>;
+                  return TaskCard(
+                    task: taskData,
+                    taskRef: taskDoc.reference,
+                    projectName: null, // Not needed in project view
+                    primaryBlue: primaryBlue,
+                    compact: true,
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
