@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'package:flutter_ble_peripheral/flutter_ble_peripheral.dart'; // NEW
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/notification_service.dart';
 
@@ -23,7 +21,7 @@ class _CreateMeetingScreenState extends State<CreateMeetingScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Save to Firestore
+      //save to firestore
       await FirebaseFirestore.instance
           .collection('projects')
           .doc(widget.projectId)
@@ -33,10 +31,10 @@ class _CreateMeetingScreenState extends State<CreateMeetingScreen> {
             'status': 'Active',
             'startTime': FieldValue.serverTimestamp(),
             'createdAt': DateTime.now(),
-            'hostDeviceName': _nameController.text, // Match the broadcast name
+            'hostDeviceName': _nameController.text, //match the broadcast name
           });
 
-      // 3. Notify Team Members
+      //notify team members
       try {
         final projectDoc = await FirebaseFirestore.instance
             .collection('projects')
@@ -45,7 +43,7 @@ class _CreateMeetingScreenState extends State<CreateMeetingScreen> {
 
         if (projectDoc.exists) {
           final members = List<String>.from(projectDoc['members'] ?? []);
-          // Remove current user from notification list
+          //remove current user from notification list
           final currentUserEmail = FirebaseAuth.instance.currentUser?.email;
           members.remove(currentUserEmail);
 
@@ -69,6 +67,7 @@ class _CreateMeetingScreenState extends State<CreateMeetingScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(
+        //ignore: use_build_context_synchronously
         context,
       ).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {

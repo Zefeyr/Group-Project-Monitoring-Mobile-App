@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 import 'project.dart';
 import 'createproject.dart';
 import 'profile.dart';
@@ -20,7 +19,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  String _selectedFilter = 'All'; // Filter state: 'All', 'Leader', 'Member'
+  String _selectedFilter =
+      'All'; //filter for projects including Leader/Member/All'
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color primaryBlue = const Color(0xFF1A3B5D);
   final Color accentBlue = const Color(0xFF3F6D9F);
@@ -174,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // 1. Deadline Reminder
+          //top deadline reminder
           SliverToBoxAdapter(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 2. Ongoing Projects Title & Filter
+          //filter for projects
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,11 +221,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-
-          // 3. Ongoing Projects List
+          //list of ongoing projects
           _buildProjectSection(user.email!, isCompleted: false),
-
-          // 4. Completed Projects Title (REMOVED LOGO & CHANGED TEXT)
+          //completed projects header
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,10 +248,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-
-          // 5. Completed Projects List
+          //completed projects list
           _buildProjectSection(user.email!, isCompleted: true),
-
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
@@ -268,18 +264,16 @@ class _HomeScreenState extends State<HomeScreen> {
           .where('status', isEqualTo: isCompleted ? 'Completed' : 'Active')
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const SliverToBoxAdapter(child: SizedBox());
-
+        }
         final docs = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-
-          // NEW: If viewing Completed list, hide projects the user has already reviewed
+          //hide projects when the user has already reviewed other members
           if (isCompleted) {
             List<dynamic> reviewedBy = data['reviewedBy'] ?? [];
             if (reviewedBy.contains(userEmail)) return false;
           }
-
           if (_selectedFilter == 'All') return true;
           final isOwner = data['ownerEmail'] == userEmail;
           return _selectedFilter == 'Leader' ? isOwner : !isOwner;
@@ -288,11 +282,10 @@ class _HomeScreenState extends State<HomeScreen> {
         if (docs.isEmpty) {
           return SliverToBoxAdapter(
             child: isCompleted
-                ? const SizedBox() // Hide the "Past" section if empty
+                ? const SizedBox() //hide the section if empty
                 : _buildEmptyState(),
           );
         }
-
         return SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final project = docs[index].data() as Map<String, dynamic>;
@@ -342,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: primaryBlue.withOpacity(0.2)),
+                side: BorderSide(color: primaryBlue.withValues(alpha: 0.2)),
               ),
               showCheckmark: false,
             ),
@@ -370,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: primaryBlue.withOpacity(0.3),
+            color: primaryBlue.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -381,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -398,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   'URGENT: CLOSEST DEADLINE',
                   style: GoogleFonts.inter(
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(),
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.1,
@@ -417,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   'Project: $projectName',
                   style: GoogleFonts.inter(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -449,8 +442,8 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 45,
             width: 45,
             decoration: BoxDecoration(
-              color: (isCompleted ? Colors.orange : primaryBlue).withOpacity(
-                0.1,
+              color: (isCompleted ? Colors.orange : primaryBlue).withValues(
+                alpha: 0.1,
               ),
               shape: BoxShape.circle,
             ),
@@ -520,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Icon(
             Icons.group_off_rounded,
             size: 70,
-            color: Colors.grey.withOpacity(0.3),
+            color: Colors.grey.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -545,7 +538,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: primaryBlue.withOpacity(0.3),
+              color: primaryBlue.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -569,7 +562,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ? _buildChatIconWithBadge(icon, isSelected)
         : Icon(
             icon,
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+            color: isSelected
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.5),
             size: 30,
           );
 
@@ -583,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
             border: index != 3
                 ? Border(
                     right: BorderSide(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       width: 1,
                     ),
                   )
@@ -611,12 +606,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildChatIconWithBadge(IconData icon, bool isSelected) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null)
+    if (user == null) {
       return Icon(
         icon,
-        color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
         size: 30,
       );
+    }
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -624,12 +620,15 @@ class _HomeScreenState extends State<HomeScreen> {
           .where('members', arrayContains: user.email)
           .snapshots(),
       builder: (context, projectSnap) {
-        if (!projectSnap.hasData)
+        if (!projectSnap.hasData) {
           return Icon(
             icon,
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.5),
+            color: isSelected
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.5),
             size: 30,
           );
+        }
         return StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('users')
@@ -647,8 +646,9 @@ class _HomeScreenState extends State<HomeScreen> {
               for (var pDoc in projectSnap.data!.docs) {
                 final int msgCount =
                     (pDoc.data() as Map<String, dynamic>)['msgCount'] ?? 0;
-                if (msgCount > (lastSeenMap[pDoc.id] ?? 0))
+                if (msgCount > (lastSeenMap[pDoc.id] ?? 0)) {
                   totalUnread += (msgCount - (lastSeenMap[pDoc.id] ?? 0));
+                }
               }
             }
             return Stack(
@@ -658,7 +658,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon,
                   color: isSelected
                       ? Colors.white
-                      : Colors.white.withOpacity(0.5),
+                      : Colors.white.withValues(alpha: 0.5),
                   size: 30,
                 ),
                 if (totalUnread > 0)
@@ -723,7 +723,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); //pop dialog
               await NotificationService().deleteToken();
               await FirebaseAuth.instance.signOut();
             },

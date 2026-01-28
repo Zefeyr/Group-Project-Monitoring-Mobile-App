@@ -24,7 +24,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
   bool _isLoading = false;
   final Color primaryBlue = const Color(0xFF1A3B5D);
 
-  // --- LOGIC: JOIN BY CODE ---
+  //joij by usig coee
   Future<void> _joinProjectByCode(String code) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.email == null) return;
@@ -45,9 +45,9 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
           'members': FieldValue.arrayUnion([user.email]),
           'pendingInvitations': FieldValue.arrayRemove([user.email]),
         });
-        // 2. Notify Project Owner
+        //notify owner
         try {
-          // Verify owner email to send noti
+          //verify owner email to send noti
           String ownerEmail = projectDoc['ownerEmail'];
 
           await NotificationService().sendNotificationToRecipients(
@@ -55,7 +55,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
             title: "New Member Joined",
             body:
                 "${user.email} joined ${projectDoc['name']} using the invite code.",
-            type: "invite", // or 'join'
+            type: "invite", // or join
             projectId: projectDoc.id,
           );
         } catch (e) {
@@ -100,7 +100,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     );
   }
 
-  // --- LOGIC: GENERATE & CREATE ---
+  //generates a random 6-character invite code
   String _generateInviteCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     return String.fromCharCodes(
@@ -150,7 +150,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         'isPublicJoinEnabled': _isLinkEnabled,
       });
 
-      // 4. Create Notification for the Creator
+      //create notification for the creator
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user?.uid)
@@ -162,10 +162,11 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
             'type': 'project',
             'isRead': false,
             'createdAt': FieldValue.serverTimestamp(),
+            //ignore: equal_keys_in_map
             'createdAt': FieldValue.serverTimestamp(),
           });
 
-      // 5. Send Invite Notifications
+      //send invite notifications
       for (String email in _invitedEmails) {
         final userQuery = await FirebaseFirestore.instance
             .collection('users')
@@ -212,7 +213,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         elevation: 0,
         foregroundColor: primaryBlue,
       ),
-      // --- ADDED A "JOIN" BUTTON FOR QUICK ACCESS ---
+      //add join button
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showJoinDialog,
         backgroundColor: Colors.white,
@@ -249,14 +250,12 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
             _buildInviteChips(),
             const SizedBox(height: 40),
             _buildSubmitButton(),
-            const SizedBox(height: 80), // Padding for FAB
+            const SizedBox(height: 80), //padding for the fab
           ],
         ),
       ),
     );
   }
-
-  // --- UI HELPERS (Unchanged from your snippet but kept for completeness) ---
 
   Widget _buildSectionLabel(String text) => Padding(
     padding: const EdgeInsets.only(left: 8, bottom: 10),
@@ -281,7 +280,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.03),
+          color: Colors.black.withValues(alpha: 0.03),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),
@@ -316,7 +315,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: _selectedDate != null
-              ? primaryBlue.withOpacity(0.5)
+              ? primaryBlue.withValues(alpha: 0.5)
               : Colors.transparent,
         ),
       ),
@@ -341,7 +340,9 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
   Widget _buildJoinLinkToggle() => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     decoration: BoxDecoration(
-      color: _isLinkEnabled ? primaryBlue.withOpacity(0.03) : Colors.white,
+      color: _isLinkEnabled
+          ? primaryBlue.withValues(alpha: 0.03)
+          : Colors.white,
       borderRadius: BorderRadius.circular(20),
       border: Border.all(
         color: _isLinkEnabled ? primaryBlue : Colors.grey.shade200,
@@ -357,7 +358,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         style: TextStyle(fontSize: 12),
       ),
       value: _isLinkEnabled,
-      activeColor: primaryBlue,
+      activeThumbColor: primaryBlue,
       onChanged: (val) => setState(() => _isLinkEnabled = val),
     ),
   );
@@ -398,7 +399,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                 ),
               ),
               onDeleted: () => setState(() => _invitedEmails.remove(email)),
-              backgroundColor: primaryBlue.withOpacity(0.05),
+              backgroundColor: primaryBlue.withValues(alpha: 0.05),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -417,7 +418,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         backgroundColor: primaryBlue,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 10,
-        shadowColor: primaryBlue.withOpacity(0.4),
+        shadowColor: primaryBlue.withValues(alpha: 0.4),
       ),
       child: _isLoading
           ? const CircularProgressIndicator(color: Colors.white)

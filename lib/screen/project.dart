@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 import 'createtask.dart';
 import 'createmeeting.dart';
@@ -32,7 +30,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   bool _isSummaryExpanded = false;
   bool _isEditingSummary = false;
-  bool _isScanning = false;
 
   late TextEditingController _summaryController;
   late TextEditingController _subjectController;
@@ -129,17 +126,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           .doc(widget.projectId)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError)
+        if (snapshot.hasError) {
           return Scaffold(
             body: Center(child: Text("Error: ${snapshot.error}")),
           );
-        if (!snapshot.hasData || !snapshot.data!.exists)
+        }
+        if (!snapshot.hasData || !snapshot.data!.exists) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
+        }
 
         var data = snapshot.data!.data() as Map<String, dynamic>;
-
         final currentUserEmail = FirebaseAuth.instance.currentUser?.email
             ?.trim()
             .toLowerCase();
@@ -148,11 +146,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             .trim()
             .toLowerCase();
         final bool isOwner = ownerEmail == currentUserEmail;
-
         final String inviteCode = data['inviteCode'] ?? "------";
         final String projectStatus = data['status'] ?? "Active";
 
-        // Logic: Once Completed, the project is locked for edits.
+        //the project is locked for edits when project is completed
         final bool isLocked = projectStatus == "Completed";
         final bool isFullyCompleted = projectStatus == "Completed";
 
@@ -161,9 +158,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           _subjectController.text = data['subject'] ?? "General";
           _statusController.text = projectStatus;
         }
-
         List<String> members = List<String>.from(data['members'] ?? []);
-
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
           appBar: AppBar(
@@ -214,8 +209,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                 _buildMemberSlider(members, currentUserEmail, ownerEmail),
                 const SizedBox(height: 20),
                 if (members.isNotEmpty && _selectedMemberIndex < members.length)
-                  _buildSelectedMemberTasks(members[_selectedMemberIndex],
-                      isOwner || members[_selectedMemberIndex] == currentUserEmail),
+                  _buildSelectedMemberTasks(
+                    members[_selectedMemberIndex],
+                    isOwner ||
+                        members[_selectedMemberIndex] == currentUserEmail,
+                  ),
                 const SizedBox(height: 30),
                 _buildExpandableDetails(data, isOwner, members, isLocked),
                 const SizedBox(height: 20),
@@ -274,7 +272,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          // Owner sees "Complete" only when Active
+          //owner project sees "Complete" only when Active
           if (isOwner && status == "Active")
             SizedBox(
               width: double.infinity,
@@ -304,7 +302,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               ),
             ),
 
-          // Everyone sees "Review" once status is "Completed"
+          // Everyone can review when status is completed
           if (status == "Completed")
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -388,13 +386,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () async {
               Navigator.pop(context);
-              // UPDATE: Set status to Completed immediately so it shows in History page
+              //set status to completed immediately so it shows in history page
               await FirebaseFirestore.instance
                   .collection('projects')
                   .doc(widget.projectId)
                   .update({'status': 'Completed'});
 
-              // NEW: Notify members about completion
+              //notify members
               try {
                 await NotificationService().sendNotificationToRecipients(
                   recipientEmails: members,
@@ -591,7 +589,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: hasActiveMeeting
-                          ? Colors.blueAccent.withOpacity(0.2)
+                          ? Colors.blueAccent.withValues(alpha: 0.2)
                           : Colors.white10,
                       shape: BoxShape.circle,
                     ),
@@ -750,7 +748,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                   const Spacer(),
                   _buildMiniTaskBadge(
-                      email, isSelected, isMe, currentUserEmail == ownerEmail),
+                    email,
+                    isSelected,
+                    isMe,
+                    currentUserEmail == ownerEmail,
+                  ),
                 ],
               ),
             ),
@@ -761,7 +763,11 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   Widget _buildMiniTaskBadge(
-      String email, bool isSelected, bool isMe, bool isProjectOwner) {
+    String email,
+    bool isSelected,
+    bool isMe,
+    bool isProjectOwner,
+  ) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('projects')
@@ -781,9 +787,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             taskName = taskText;
           }
         }
-
         bool showBeep = isProjectOwner && !isMe && taskName != null;
-
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
@@ -850,14 +854,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           .doc(targetUid)
           .collection('notifications')
           .add({
-        'title': "Beep from Project Leader",
-        'body': "Reminder: Please check your task '$taskName'.",
-        'createdAt': FieldValue.serverTimestamp(),
-        'isRead': false,
-        'type': 'beep',
-        'senderEmail': currentUser?.email,
-        'projectId': widget.projectId,
-      });
+            'title': "Beep from Project Leader",
+            'body': "Reminder: Please check your task '$taskName'.",
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'type': 'beep',
+            'senderEmail': currentUser?.email,
+            'projectId': widget.projectId,
+          });
 
       _showSnack("Beep sent to ${targetEmail.split('@')[0]}!", Colors.green);
     } catch (e) {
@@ -1018,6 +1022,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       ),
     );
   }
+
   Widget _buildSelectedMemberTasks(String memberEmail, bool canEdit) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1040,13 +1045,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   icon: const Icon(Icons.add_circle_outline, size: 20),
                   color: primaryBlue,
                   onPressed: () {
-                    // Quick add task for this user
+                    //add task for this user
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => CreateTaskScreen(
                           projectId: widget.projectId,
-                          projectMembers: [memberEmail], // Pre-filter or logic?
+                          projectMembers: [memberEmail], //pre-filter
                         ),
                       ),
                     );
@@ -1104,7 +1109,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   return TaskCard(
                     task: taskData,
                     taskRef: taskDoc.reference,
-                    projectName: null, // Not needed in project view
+                    projectName: null,
                     primaryBlue: primaryBlue,
                     compact: true,
                   );
