@@ -42,9 +42,9 @@ An app that helps with organizing your group project and connect with other memb
 
 ### **b. Background of the Problem**
 Explain:
--The Problem: Many students face "social loafing" where some members contribute less than others, coupled with scattered communication across multiple apps.
--Importance: Group projects are critical for academic success, but poor coordination leads to last-minute stress and unfair grading.
--User Impact: Leads to frustration, lack of clear visibility on project progress, and administrative overhead.
+- The Problem: Many students face "social loafing" where some members contribute less than others, coupled with scattered communication across multiple apps.
+- Importance: Group projects are critical for academic success, but poor coordination leads to last-minute stress and unfair grading.
+- User Impact: Leads to frustration, lack of clear visibility on project progress, and administrative overhead.
 
 ### **c. Objective**
 - To streamline group project management by improving communication and collaboration among team members through features like real time notifications, task tracking, peer reviews, and location based meeting assistance.  
