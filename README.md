@@ -1,6 +1,6 @@
 # CollabQuest: The Project Hub
 
-An app that helps with organizing your group project and connect with other members. Features include "beeping" others for attention, task tracking, reminders, push notifications, peer reviews, and using sensors/Bluetooth for face-to-meeting meetings.
+An app that helps with organizing your group project and connect with other members. Features include "beeping" others for attention, task tracking, reminders, push notifications, peer reviews, and using Bluetooth for physical meetings.
 
 # Group Information
 
