@@ -32,14 +32,17 @@ An app that helps with organizing your group project and connect with other memb
 
 ## **1.1 Mobile App Details**
 
-### **a. Background of the Problem**
+### **a. Title**
+**CollabQuest: The Project Hub**
+
+### **b. Background of the Problem**
 * **The Problem:** Many students face "social loafing" where some members contribute less than others, coupled with scattered communication across multiple apps.
 * **Importance:** Group projects are critical for academic success, but poor coordination leads to last-minute stress and unfair grading.
 * **User Impact:** Leads to frustration, lack of clear visibility on project progress, and administrative overhead.
 
-### **b. Objective**
-- To streamline group project management by improving communication and collaboration among team members through features like real-time notifications, task tracking, peer reviews, and location-based meeting assistance.  
-- To enhance the efficiency and effectiveness of group project collaboration by providing tools for real-time communication, task management, reminders, peer feedback, and in-person coordination.
+### **c. Objective**
+- To streamline group project management by improving communication and collaboration among team members through features like real time notifications, task tracking, peer reviews, and location based meeting assistance.  
+- To enhance the efficiency and effectiveness of group project collaboration by providing tools for real time communication, task management, reminders, peer feedback, and in person coordination through sensors and Bluetooth.  
 
 ### **c. Target Users**
 - Students working on group projects in colleges or universities.
@@ -108,7 +111,25 @@ The Group Project Monitoring App is designed to solve collaboration problems by 
 
 ### **Screen Navigation Flow**
 <img width="987" height="493" alt="navflow" src="https://github.com/user-attachments/assets/56f47c43-f959-4575-b376-912b6363d39a" />
-<p align="center">Figure 2.1.2 Screen Navigation Flow</p>
+<p align="center">
+    Figure 2.1.2 Screen Navigation Flow
+</p>
+
+
+
+## **2.2 Project Planning**
+
+### **a. Gantt Chart & Timeline**
+| Task | Duration | Start Date | End Date |
+|-------|----------|------------|----------|
+| Project Initiation | 2 Weeks | Nov 10, 2025 | Nov 24, 2025 |
+| Requirement Analysis | 2 Weeks | Nov 25, 2025 | Dec 8, 2025 |
+| Design (UI/UX) | 2 Weeks | Dec 9, 2025 | Dec 23, 2025 |
+| Development | 4 Weeks | Dec 24, 2025 | Jan 21, 2026 |
+| Testing & Presentation | 1 Weeks | Jan 22, 2026 | Jan 28, 2026 |
+
+* **Start Date:** Nov 10, 2025
+* **End Date:** Jan 20, 2026
 
 ---
 
