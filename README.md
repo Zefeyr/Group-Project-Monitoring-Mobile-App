@@ -201,5 +201,8 @@ Describe:
 ---
 
 # References
-1. Google. (2026). *Flutter Documentation*. 
-2. Firebase. (2026). *Firestore Security Rules*.
+*  Chidambaram, L., & Tung, L. L. (2005). Is out of sight, out of mind? An empirical study of social loafing in technology-supported groups. Information Systems Research, 16(2), 149-168. https://doi.org/10.1287/isre.1050.0051
+*  Firebase. (2026). Firebase Cloud Messaging (FCM) implementation guide. Google Developers. https://firebase.google.com/docs/cloud-messaging
+*  Lardinois, F. (2024). The evolution of Impeller: Flutter’s next-generation rendering engine. TechCrunch.
+*  Napier, N. P., Keil, M., & Tan, B. C. (2009). IT project managers' construction of successful project management practice: A structuralist approach. Information Systems Journal, 19(3), 255-281. https://doi.org/10.1111/j.1365-2575.2007.00264.x
+*  Sahu, M., & Panda, S. K. (2023). Cross-platform mobile application development using Flutter: A comprehensive guide. CRC Press.
